@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { SidebarNavLinks, BottomNavLinks } from '@/components/nav-links';
 import { LogoutButton } from '@/components/logout-button';
@@ -13,8 +14,12 @@ export default async function DashboardLayout({
   } = await supabase.auth.getUser();
 
   const { data: profile } = user
-    ? await supabase.from('profiles').select('full_name').eq('id', user.id).single()
+    ? await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle()
     : { data: null };
+
+  if (user && !profile) {
+    redirect('/complete-registration');
+  }
 
   const displayName = profile?.full_name ?? user?.email ?? '';
 

@@ -31,7 +31,11 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/login') ||
     request.nextUrl.pathname.startsWith('/register');
 
-  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+  const isProtectedPage =
+    request.nextUrl.pathname.startsWith('/dashboard') ||
+    request.nextUrl.pathname.startsWith('/complete-registration');
+
+  if (!user && isProtectedPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
