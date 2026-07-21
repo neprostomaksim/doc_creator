@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { MarkFieldDialog } from './mark-field-dialog';
-import { isMarkableBlock, type Block, type TemplateField } from '@/lib/template-types';
+import {
+  getMarkableUnits,
+  updateMarkableUnitText,
+  type Block,
+  type TemplateField,
+} from '@/lib/template-types';
 
 type RequisiteOption = { field_key: string; field_label: string };
 
@@ -58,14 +63,23 @@ export function TemplateMarkupEditor({
   const [category, setCategory] = useState(initialCategory ?? '');
   const [blocks, setBlocks] = useState<Block[]>(initialBlocks);
   const [fields, setFields] = useState<TemplateField[]>(initialFields);
-  const [selection, setSelection] = useState<{ blockId: string; text: string } | null>(null);
-  const [dialogBlockId, setDialogBlockId] = useState<string | null>(null);
+  const [selection, setSelection] = useState<{ unitId: string; text: string } | null>(null);
+  const [dialog, setDialog] = useState<{ unitId: string; text: string } | null>(null);
 
   const supabase = createClient();
-  const blockRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const unitRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const dialogOpenRef = useRef(false);
+
+  useEffect(() => {
+    dialogOpenRef.current = dialog !== null;
+  }, [dialog]);
 
   useEffect(() => {
     function onSelectionChange() {
+      // Пока открыт диалог, не трогаем состояние выделения: клики и ввод
+      // в полях диалога тоже вызывают selectionchange и иначе сбросили бы его.
+      if (dialogOpenRef.current) return;
+
       const sel = window.getSelection();
       if (!sel || sel.isCollapsed) {
         setSelection(null);
@@ -76,9 +90,9 @@ export function TemplateMarkupEditor({
         setSelection(null);
         return;
       }
-      for (const [blockId, el] of blockRefs.current) {
+      for (const [unitId, el] of unitRefs.current) {
         if (el.contains(sel.anchorNode) && el.contains(sel.focusNode)) {
-          setSelection({ blockId, text });
+          setSelection({ unitId, text });
           return;
         }
       }
@@ -98,13 +112,15 @@ export function TemplateMarkupEditor({
   }
 
   function addField(field: TemplateField, appendToEnd = false) {
-    const newBlocks = blocks.map((block) => {
-      if (block.id !== field.block_id || !isMarkableBlock(block)) return block;
-      const newText = appendToEnd
-        ? `${block.text} ${field.placeholder}`.trim()
-        : block.text.replace(field.original_text, field.placeholder);
-      return { ...block, text: newText };
-    });
+    const units = getMarkableUnits(blocks);
+    const unit = units.find((u) => u.id === field.block_id);
+    if (!unit) return;
+
+    const newText = appendToEnd
+      ? `${unit.text} ${field.placeholder}`.trim()
+      : unit.text.replace(field.original_text, field.placeholder);
+
+    const newBlocks = updateMarkableUnitText(blocks, field.block_id, newText);
     const newFields = [...fields, field];
     setBlocks(newBlocks);
     setFields(newFields);
@@ -115,10 +131,12 @@ export function TemplateMarkupEditor({
     const field = fields.find((f) => f.id === fieldId);
     if (!field) return;
 
-    const newBlocks = blocks.map((block) => {
-      if (block.id !== field.block_id || !isMarkableBlock(block)) return block;
-      return { ...block, text: block.text.replace(field.placeholder, field.original_text).trim() };
-    });
+    const units = getMarkableUnits(blocks);
+    const unit = units.find((u) => u.id === field.block_id);
+    if (!unit) return;
+
+    const newText = unit.text.replace(field.placeholder, field.original_text).trim();
+    const newBlocks = updateMarkableUnitText(blocks, field.block_id, newText);
     const newFields = fields.filter((f) => f.id !== fieldId);
     setBlocks(newBlocks);
     setFields(newFields);
@@ -127,21 +145,54 @@ export function TemplateMarkupEditor({
 
   function handleDialogConfirm(field: TemplateField) {
     addField(field);
-    setDialogBlockId(null);
+    setDialog(null);
     setSelection(null);
     window.getSelection()?.removeAllRanges();
   }
 
-  function insertSignatureOrStamp(blockId: string, type: 'signature' | 'stamp') {
+  function insertSignatureOrStamp(unitId: string, type: 'signature' | 'stamp') {
     const field: TemplateField = {
       id: crypto.randomUUID(),
       name: type === 'signature' ? 'Место подписи' : 'Место печати',
       placeholder: type === 'signature' ? '{{signature}}' : '{{stamp}}',
       source: { type },
-      block_id: blockId,
+      block_id: unitId,
       original_text: '',
     };
     addField(field, true);
+  }
+
+  function hasPlaceholder(text: string) {
+    return /\{\{[^}]+\}\}/.test(text);
+  }
+
+  function markWholeUnit(unitId: string, text: string) {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    setDialog({ unitId, text: trimmed });
+  }
+
+  function registerRef(unitId: string) {
+    return (el: HTMLElement | null) => {
+      if (el) unitRefs.current.set(unitId, el);
+      else unitRefs.current.delete(unitId);
+    };
+  }
+
+  function SelectionToolbar({ unitId }: { unitId: string }) {
+    if (selection?.unitId !== unitId) return null;
+    return (
+      <div className="mt-1 flex flex-wrap items-center gap-2 rounded-lg bg-gray-50 px-2 py-1 text-xs">
+        <span className="truncate text-gray-500">Выделено: «{selection.text}»</span>
+        <button
+          type="button"
+          onClick={() => setDialog({ unitId, text: selection.text })}
+          className="rounded-md bg-gray-900 px-2 py-1 font-medium text-white"
+        >
+          Сделать полем
+        </button>
+      </div>
+    );
   }
 
   const hasSignature = fields.some((f) => f.source.type === 'signature');
@@ -181,8 +232,20 @@ export function TemplateMarkupEditor({
             if (block.type === 'list') {
               return (
                 <ul key={block.id} className="list-disc space-y-1 pl-5 text-sm text-gray-800">
-                  {block.items.map((item, i) => (
-                    <li key={i}>{item}</li>
+                  {block.items.map((item) => (
+                    <li key={item.id}>
+                      <span ref={registerRef(item.id)}>{renderTextWithPlaceholders(item.text)}</span>
+                      <SelectionToolbar unitId={item.id} />
+                      {item.text.trim() && !hasPlaceholder(item.text) && (
+                        <button
+                          type="button"
+                          onClick={() => markWholeUnit(item.id, item.text)}
+                          className="ml-2 text-xs text-gray-400 hover:text-gray-700"
+                        >
+                          Разметить целиком
+                        </button>
+                      )}
+                    </li>
                   ))}
                 </ul>
               );
@@ -195,9 +258,21 @@ export function TemplateMarkupEditor({
                     <tbody>
                       {block.rows.map((row, ri) => (
                         <tr key={ri}>
-                          {row.map((cell, ci) => (
-                            <td key={ci} className="border border-gray-200 px-2 py-1">
-                              {cell}
+                          {row.map((cell) => (
+                            <td key={cell.id} className="border border-gray-200 px-2 py-1 align-top">
+                              <span ref={registerRef(cell.id)}>
+                                {renderTextWithPlaceholders(cell.text)}
+                              </span>
+                              <SelectionToolbar unitId={cell.id} />
+                              {cell.text.trim() && !hasPlaceholder(cell.text) && (
+                                <button
+                                  type="button"
+                                  onClick={() => markWholeUnit(cell.id, cell.text)}
+                                  className="mt-1 block text-xs text-gray-400 hover:text-gray-700"
+                                >
+                                  Разметить целиком
+                                </button>
+                              )}
                             </td>
                           ))}
                         </tr>
@@ -221,28 +296,10 @@ export function TemplateMarkupEditor({
                   {(block.type === 'heading' || block.type === 'clause') && (
                     <span className="mr-2 text-gray-500">{block.number}</span>
                   )}
-                  <span
-                    ref={(el) => {
-                      if (el) blockRefs.current.set(block.id, el);
-                      else blockRefs.current.delete(block.id);
-                    }}
-                  >
-                    {renderTextWithPlaceholders(block.text)}
-                  </span>
+                  <span ref={registerRef(block.id)}>{renderTextWithPlaceholders(block.text)}</span>
                 </div>
 
-                {selection?.blockId === block.id && (
-                  <div className="mt-1 flex flex-wrap items-center gap-2 rounded-lg bg-gray-50 px-2 py-1 text-xs">
-                    <span className="truncate text-gray-500">Выделено: «{selection.text}»</span>
-                    <button
-                      type="button"
-                      onClick={() => setDialogBlockId(block.id)}
-                      className="rounded-md bg-gray-900 px-2 py-1 font-medium text-white"
-                    >
-                      Сделать полем
-                    </button>
-                  </div>
-                )}
+                <SelectionToolbar unitId={block.id} />
 
                 <div className="mt-1 flex gap-3 text-xs text-gray-400">
                   {!hasSignature && (
@@ -300,15 +357,15 @@ export function TemplateMarkupEditor({
         </div>
       </div>
 
-      {dialogBlockId && selection && (
+      {dialog && (
         <MarkFieldDialog
-          blockId={dialogBlockId}
-          selectedText={selection.text}
+          blockId={dialog.unitId}
+          selectedText={dialog.text}
           orgRequisites={orgRequisites}
           clientRequisites={clientRequisites}
           existingPlaceholderKeys={existingPlaceholderKeys}
           onConfirm={handleDialogConfirm}
-          onClose={() => setDialogBlockId(null)}
+          onClose={() => setDialog(null)}
         />
       )}
     </div>

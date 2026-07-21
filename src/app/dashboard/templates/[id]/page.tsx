@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { TemplateMarkupEditor } from '@/components/template-markup-editor';
-import type { Block, TemplateField } from '@/lib/template-types';
+import { normalizeBlocks, type TemplateField } from '@/lib/template-types';
 
 export default async function TemplateDetailPage({
   params,
@@ -56,7 +56,7 @@ export default async function TemplateDetailPage({
       templateId={template.id}
       name={template.name}
       category={template.category}
-      initialBlocks={(template.blocks ?? []) as Block[]}
+      initialBlocks={normalizeBlocks(template.blocks)}
       initialFields={(template.fields ?? []) as TemplateField[]}
       orgRequisites={orgRequisites ?? []}
       clientRequisites={clientRequisites}

@@ -69,17 +69,18 @@ export async function parseDocxToBlocks(buffer: Buffer): Promise<Block[]> {
 
     if (tag === 'ul' || tag === 'ol') {
       const items = Array.from(inner.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/g))
-        .map((m) => stripTags(m[1]))
-        .filter(Boolean);
+        .map((m) => ({ id: nextId(), text: stripTags(m[1]) }))
+        .filter((item) => item.text);
       if (items.length) blocks.push({ id: nextId(), type: 'list', items });
       continue;
     }
 
     if (tag === 'table') {
       const rows = Array.from(inner.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)).map((rowMatch) =>
-        Array.from(rowMatch[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/g)).map((cellMatch) =>
-          stripTags(cellMatch[1]),
-        ),
+        Array.from(rowMatch[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/g)).map((cellMatch) => ({
+          id: nextId(),
+          text: stripTags(cellMatch[1]),
+        })),
       );
       if (rows.length) blocks.push({ id: nextId(), type: 'table', rows });
     }
