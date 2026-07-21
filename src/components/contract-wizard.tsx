@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import type { TemplateField } from '@/lib/template-types';
 
@@ -18,30 +19,49 @@ const MANUAL_INPUT_LABELS: Record<'text' | 'number' | 'date' | 'amount', string>
   amount: 'Сумма',
 };
 
+/** Пресет для режима «Новая версия» — открывает мастер сразу на шаге полей. */
+export type WizardPreset = {
+  caseId: string;
+  caseTitle: string;
+  clientId: string;
+  templateId: string;
+  values: Record<string, string>;
+};
+
 export function ContractWizard({
   clients,
   templates,
   orgRequisites,
   stamps,
+  preset,
+  initialClientId,
 }: {
   clients: Client[];
   templates: Template[];
   orgRequisites: OrgRequisite[];
   stamps: Stamp[];
+  preset?: WizardPreset;
+  initialClientId?: string;
 }) {
   const supabase = createClient();
-  const [step, setStep] = useState(1);
+  const isNewVersion = !!preset;
+  const [step, setStep] = useState(preset ? 4 : 1);
 
   const [clientList, setClientList] = useState(clients);
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(
+    preset?.clientId ?? initialClientId ?? null,
+  );
   const [newClientMode, setNewClientMode] = useState(false);
   const [newClientName, setNewClientName] = useState('');
   const [creatingClient, setCreatingClient] = useState(false);
 
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
+    preset?.templateId ?? null,
+  );
+  const [caseTitle, setCaseTitle] = useState(preset?.caseTitle ?? '');
 
   const [clientValues, setClientValues] = useState<Record<string, string>>({});
-  const [manualValues, setManualValues] = useState<Record<string, string>>({});
+  const [manualValues, setManualValues] = useState<Record<string, string>>(preset?.values ?? {});
 
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [selectedSignatureId, setSelectedSignatureId] = useState<string | ''>('');
@@ -49,9 +69,12 @@ export function ContractWizard({
 
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ url: string; filename: string; warnings: string[] } | null>(
-    null,
-  );
+  const [result, setResult] = useState<{
+    url: string;
+    filename: string;
+    warnings: string[];
+    caseId: string;
+  } | null>(null);
 
   const orgValueByKey = useMemo(
     () => new Map(orgRequisites.map((r) => [r.field_key, r])),
@@ -137,6 +160,8 @@ export function ContractWizard({
         values: manualValues,
         signatureId: selectedSignatureId || null,
         stampId: selectedStampId || null,
+        caseTitle: caseTitle || null,
+        caseId: preset?.caseId ?? null,
       }),
     });
 
@@ -187,13 +212,21 @@ export function ContractWizard({
               </ul>
             </div>
           )}
-          <button
-            type="button"
-            onClick={() => handleDownload(result.url, result.filename)}
-            className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
-          >
-            Скачать {result.filename}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => handleDownload(result.url, result.filename)}
+              className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+            >
+              Скачать {result.filename}
+            </button>
+            <Link
+              href={`/dashboard/contracts/${result.caseId}`}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Открыть дело
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="rounded-xl border border-gray-200 bg-white p-5">
@@ -299,6 +332,25 @@ export function ContractWizard({
           {step === 4 && selectedTemplate && (
             <div>
               <h2 className="mb-3 text-lg font-semibold text-gray-900">Заполните поля</h2>
+
+              {!isNewVersion && (
+                <div className="mb-4">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Название дела</label>
+                  <input
+                    value={caseTitle}
+                    onChange={(e) => setCaseTitle(e.target.value)}
+                    placeholder={`Договор с ${
+                      clientList.find((c) => c.id === selectedClientId)?.name ?? 'клиентом'
+                    }`}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                  />
+                  <p className="mt-1 text-xs text-gray-400">
+                    Договор попадёт в дело клиента. Если оставить пустым — подставим название по
+                    умолчанию.
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-3">
                 {selectedTemplate.fields
                   .filter((f) => f.source.type !== 'signature' && f.source.type !== 'stamp')
@@ -396,7 +448,7 @@ export function ContractWizard({
             <button
               type="button"
               onClick={goBack}
-              disabled={step === 1}
+              disabled={step === 1 || isNewVersion}
               className="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-0"
             >
               Назад

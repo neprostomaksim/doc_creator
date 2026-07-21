@@ -25,10 +25,16 @@ export default async function ClientDetailPage({
     .eq('owner_id', client.id)
     .order('sort_order');
 
+  const { data: cases } = await supabase
+    .from('cases')
+    .select('id, title, status, created_at')
+    .eq('client_id', client.id)
+    .order('created_at', { ascending: false });
+
   return (
     <div>
       <h1 className="mb-4 text-2xl font-semibold text-gray-900">{client.name}</h1>
-      <ClientCard client={client} requisites={requisites ?? []} />
+      <ClientCard client={client} requisites={requisites ?? []} cases={cases ?? []} />
     </div>
   );
 }

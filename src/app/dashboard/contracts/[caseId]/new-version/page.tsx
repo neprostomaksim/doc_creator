@@ -1,14 +1,33 @@
+import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { ContractWizard } from '@/components/contract-wizard';
+import { ContractWizard, type WizardPreset } from '@/components/contract-wizard';
 import type { TemplateField } from '@/lib/template-types';
 
-export default async function NewContractPage({
-  searchParams,
+export default async function NewVersionPage({
+  params,
 }: {
-  searchParams: Promise<{ client?: string }>;
+  params: Promise<{ caseId: string }>;
 }) {
-  const { client: initialClientId } = await searchParams;
+  const { caseId } = await params;
   const supabase = await createClient();
+
+  const { data: caseRow } = await supabase
+    .from('cases')
+    .select('id, title, client_id')
+    .eq('id', caseId)
+    .single();
+
+  if (!caseRow) notFound();
+
+  const { data: lastVersion } = await supabase
+    .from('contract_versions')
+    .select('template_id, data')
+    .eq('case_id', caseId)
+    .order('version_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!lastVersion?.template_id) notFound();
 
   const { data: clients } = await supabase.from('clients').select('id, name').order('name');
 
@@ -32,6 +51,15 @@ export default async function NewContractPage({
     .select('id, name, type')
     .order('created_at', { ascending: false });
 
+  const versionData = (lastVersion.data ?? {}) as { values?: Record<string, string> };
+  const preset: WizardPreset = {
+    caseId: caseRow.id,
+    caseTitle: caseRow.title,
+    clientId: caseRow.client_id,
+    templateId: lastVersion.template_id,
+    values: versionData.values ?? {},
+  };
+
   return (
     <ContractWizard
       clients={clients ?? []}
@@ -43,7 +71,7 @@ export default async function NewContractPage({
       }))}
       orgRequisites={orgRequisites ?? []}
       stamps={stamps ?? []}
-      initialClientId={initialClientId}
+      preset={preset}
     />
   );
 }

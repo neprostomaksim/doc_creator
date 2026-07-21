@@ -16,6 +16,10 @@ type GenerateBody = {
   values: Record<string, string>;
   signatureId?: string | null;
   stampId?: string | null;
+  /** Название нового дела. Игнорируется, если передан caseId. */
+  caseTitle?: string;
+  /** Если задан — создаём новую версию в существующем деле, а не новое дело. */
+  caseId?: string | null;
 };
 
 export async function POST(request: Request) {
@@ -29,7 +33,7 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json()) as GenerateBody;
-  const { templateId, clientId, values, signatureId, stampId } = body;
+  const { templateId, clientId, values, signatureId, stampId, caseTitle, caseId } = body;
 
   if (!templateId || !clientId) {
     return NextResponse.json({ error: 'Не хватает данных' }, { status: 400 });
@@ -152,6 +156,47 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Не удалось сохранить готовый файл' }, { status: 500 });
   }
 
+  // Договор кладётся в дело: либо в переданное (новая версия), либо создаём новое.
+  let resolvedCaseId = caseId ?? null;
+  let versionNumber = 1;
+
+  if (resolvedCaseId) {
+    const { data: lastVersion } = await supabase
+      .from('contract_versions')
+      .select('version_number')
+      .eq('case_id', resolvedCaseId)
+      .order('version_number', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    versionNumber = (lastVersion?.version_number ?? 0) + 1;
+  } else {
+    const title = caseTitle?.trim() || `Договор с ${client.name}`;
+    const { data: newCase, error: caseError } = await supabase
+      .from('cases')
+      .insert({ user_id: user.id, client_id: clientId, title, status: 'draft' })
+      .select('id')
+      .single();
+
+    if (caseError || !newCase) {
+      return NextResponse.json({ error: 'Не удалось создать дело' }, { status: 500 });
+    }
+    resolvedCaseId = newCase.id;
+  }
+
+  const { error: versionError } = await supabase.from('contract_versions').insert({
+    case_id: resolvedCaseId,
+    version_number: versionNumber,
+    mode: 'strict',
+    template_id: templateId,
+    blocks: normalizeBlocks(template.blocks),
+    data: { values, signatureId: signatureId ?? null, stampId: stampId ?? null },
+    docx_path: storagePath,
+  });
+
+  if (versionError) {
+    return NextResponse.json({ error: 'Не удалось сохранить версию договора' }, { status: 500 });
+  }
+
   // Имя файла при скачивании задаёт браузер (см. handleDownload в contract-wizard.tsx) —
   // Supabase некорректно кодирует кириллицу в заголовке Content-Disposition.
   const { data: signed } = await supabase.storage.from('contracts').createSignedUrl(storagePath, 3600);
@@ -167,5 +212,7 @@ export async function POST(request: Request) {
     url: signed?.signedUrl ?? null,
     filename: suggestedName,
     warnings,
+    caseId: resolvedCaseId,
+    versionNumber,
   });
 }

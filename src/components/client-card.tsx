@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { RequisitesEditor, type Requisite } from './requisites-editor';
+import { CASE_STATUS_LABELS, CASE_STATUS_BADGE, type CaseStatus } from '@/lib/case-status';
 
 type Client = {
   id: string;
@@ -12,12 +14,16 @@ type Client = {
   notes: string | null;
 };
 
+type CaseRow = { id: string; title: string; status: CaseStatus; created_at: string };
+
 export function ClientCard({
   client,
   requisites,
+  cases,
 }: {
   client: Client;
   requisites: Requisite[];
+  cases: CaseRow[];
 }) {
   const [name, setName] = useState(client.name);
   const [country, setCountry] = useState(client.country ?? '');
@@ -88,7 +94,26 @@ export function ClientCard({
 
       <div className="rounded-xl border border-gray-200 bg-white p-4">
         <h2 className="mb-2 text-sm font-medium text-gray-700">Договоры</h2>
-        <p className="text-sm text-gray-500">Пока пусто — появится начиная с шага 4.</p>
+        {cases.length === 0 ? (
+          <p className="text-sm text-gray-500">Пока нет договоров с этим клиентом.</p>
+        ) : (
+          <div className="space-y-2">
+            {cases.map((c) => (
+              <Link
+                key={c.id}
+                href={`/dashboard/contracts/${c.id}`}
+                className="flex items-center justify-between rounded-lg border border-gray-200 p-3 text-sm hover:border-gray-300"
+              >
+                <span className="min-w-0 truncate text-gray-900">{c.title}</span>
+                <span
+                  className={`ml-3 shrink-0 rounded-full px-2 py-1 text-xs font-medium ${CASE_STATUS_BADGE[c.status]}`}
+                >
+                  {CASE_STATUS_LABELS[c.status]}
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
