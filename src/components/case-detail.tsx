@@ -99,15 +99,25 @@ export function CaseDetail({
                 {new Date(v.createdAt).toLocaleDateString('ru-RU')}
               </p>
             </div>
-            {v.url && (
-              <button
-                type="button"
-                onClick={() => handleDownload(v.url as string, v.versionNumber)}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Скачать
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {v.mode !== 'strict' && (
+                <Link
+                  href={`/dashboard/contracts/${caseId}/versions/${v.id}`}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Редактировать
+                </Link>
+              )}
+              {v.url && (
+                <button
+                  type="button"
+                  onClick={() => handleDownload(v.url as string, v.versionNumber)}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Скачать
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>
