@@ -9,8 +9,16 @@ type Client = { id: string; name: string };
 type Template = { id: string; name: string; category: string | null; fields: TemplateField[] };
 type OrgRequisite = { field_key: string; field_label: string; field_value: string };
 type Stamp = { id: string; name: string; type: 'signature' | 'stamp' };
+type Material = { id: string; name: string };
+type ExampleCase = { id: string; title: string };
 
-const STEP_LABELS = ['Клиент', 'Режим', 'Шаблон', 'Поля'];
+type Mode = 'strict' | 'assisted' | 'generative';
+
+const MODE_INFO: { id: Mode; label: string; hint: string }[] = [
+  { id: 'strict', label: 'Строго по шаблону', hint: 'Быстро, без ИИ — подстановка данных в шаблон' },
+  { id: 'assisted', label: 'Шаблон + правки ИИ', hint: 'Взять шаблон и попросить ИИ его изменить' },
+  { id: 'generative', label: 'С нуля по материалам', hint: 'ИИ соберёт договор по вашему описанию' },
+];
 
 const MANUAL_INPUT_LABELS: Record<'text' | 'number' | 'date' | 'amount', string> = {
   text: 'Текст',
@@ -18,6 +26,12 @@ const MANUAL_INPUT_LABELS: Record<'text' | 'number' | 'date' | 'amount', string>
   date: 'Дата',
   amount: 'Сумма',
 };
+
+function stepLabels(mode: Mode): string[] {
+  if (mode === 'generative') return ['Клиент', 'Режим', 'Материалы', 'Описание'];
+  if (mode === 'assisted') return ['Клиент', 'Режим', 'Шаблон', 'Правки'];
+  return ['Клиент', 'Режим', 'Шаблон', 'Поля'];
+}
 
 /** Пресет для режима «Новая версия» — открывает мастер сразу на шаге полей. */
 export type WizardPreset = {
@@ -33,6 +47,8 @@ export function ContractWizard({
   templates,
   orgRequisites,
   stamps,
+  materials = [],
+  exampleCases = [],
   preset,
   initialClientId,
 }: {
@@ -40,12 +56,15 @@ export function ContractWizard({
   templates: Template[];
   orgRequisites: OrgRequisite[];
   stamps: Stamp[];
+  materials?: Material[];
+  exampleCases?: ExampleCase[];
   preset?: WizardPreset;
   initialClientId?: string;
 }) {
   const supabase = createClient();
   const isNewVersion = !!preset;
   const [step, setStep] = useState(preset ? 4 : 1);
+  const [mode, setMode] = useState<Mode>('strict');
 
   const [clientList, setClientList] = useState(clients);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(
@@ -62,6 +81,12 @@ export function ContractWizard({
 
   const [clientValues, setClientValues] = useState<Record<string, string>>({});
   const [manualValues, setManualValues] = useState<Record<string, string>>(preset?.values ?? {});
+
+  // ИИ-режимы
+  const [instruction, setInstruction] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedMaterialIds, setSelectedMaterialIds] = useState<string[]>([]);
+  const [selectedExampleIds, setSelectedExampleIds] = useState<string[]>([]);
 
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [selectedSignatureId, setSelectedSignatureId] = useState<string | ''>('');
@@ -81,6 +106,7 @@ export function ContractWizard({
     [orgRequisites],
   );
 
+  const labels = stepLabels(mode);
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId) ?? null;
   const signatures = stamps.filter((s) => s.type === 'signature');
   const stampImages = stamps.filter((s) => s.type === 'stamp');
@@ -146,7 +172,11 @@ export function ContractWizard({
     setStep((s) => Math.max(s - 1, 1));
   }
 
-  async function handleGenerate() {
+  function toggleInArray(arr: string[], id: string): string[] {
+    return arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id];
+  }
+
+  async function handleGenerateStrict() {
     if (!selectedClientId || !selectedTemplateId) return;
     setGenerating(true);
     setError(null);
@@ -173,14 +203,58 @@ export function ContractWizard({
       setError(body?.error ?? 'Не удалось сгенерировать договор');
       return;
     }
-
     setResult(await response.json());
   }
+
+  async function handleGenerateAi() {
+    if (!selectedClientId) return;
+    setGenerating(true);
+    setError(null);
+
+    const response = await fetch('/api/contracts/generate-ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode,
+        clientId: selectedClientId,
+        caseTitle: caseTitle || null,
+        caseId: preset?.caseId ?? null,
+        templateId: selectedTemplateId,
+        instruction,
+        description,
+        exampleCaseIds: selectedExampleIds,
+        materialIds: selectedMaterialIds,
+      }),
+    });
+
+    setGenerating(false);
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      setError(body?.error ?? 'Не удалось сгенерировать договор');
+      return;
+    }
+    setResult(await response.json());
+  }
+
+  function onGenerateClick() {
+    if (mode === 'strict') setShowSignatureDialog(true);
+    else handleGenerateAi();
+  }
+
+  const canProceedFromStep3 =
+    mode === 'generative' ? true : !!selectedTemplateId;
+  const canGenerate =
+    mode === 'assisted'
+      ? instruction.trim().length > 0
+      : mode === 'generative'
+        ? description.trim().length > 0
+        : true;
 
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-6 flex items-center justify-between">
-        {STEP_LABELS.map((label, i) => (
+        {labels.map((label, i) => (
           <div key={label} className="flex flex-1 items-center">
             <div
               className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
@@ -194,7 +268,7 @@ export function ContractWizard({
               {i + 1}
             </div>
             <span className="ml-2 hidden text-sm text-gray-600 sm:inline">{label}</span>
-            {i < STEP_LABELS.length - 1 && <div className="mx-2 h-px flex-1 bg-gray-200" />}
+            {i < labels.length - 1 && <div className="mx-2 h-px flex-1 bg-gray-200" />}
           </div>
         ))}
       </div>
@@ -284,20 +358,30 @@ export function ContractWizard({
             <div>
               <h2 className="mb-3 text-lg font-semibold text-gray-900">Выберите режим</h2>
               <div className="space-y-2">
-                <div className="rounded-lg border border-gray-900 bg-gray-50 p-3 text-sm font-medium text-gray-900">
-                  Строго по шаблону
-                </div>
-                <div className="rounded-lg border border-gray-200 p-3 text-sm text-gray-400">
-                  Шаблон + правки ИИ <span className="text-xs">— скоро</span>
-                </div>
-                <div className="rounded-lg border border-gray-200 p-3 text-sm text-gray-400">
-                  С нуля по материалам <span className="text-xs">— скоро</span>
-                </div>
+                {MODE_INFO.map((m) => (
+                  <label
+                    key={m.id}
+                    className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-sm ${
+                      mode === m.id ? 'border-gray-900 bg-gray-50' : 'border-gray-200'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      checked={mode === m.id}
+                      onChange={() => setMode(m.id)}
+                      className="mt-0.5"
+                    />
+                    <span>
+                      <span className="font-medium text-gray-900">{m.label}</span>
+                      <span className="block text-xs text-gray-500">{m.hint}</span>
+                    </span>
+                  </label>
+                ))}
               </div>
             </div>
           )}
 
-          {step === 3 && (
+          {step === 3 && mode !== 'generative' && (
             <div>
               <h2 className="mb-3 text-lg font-semibold text-gray-900">Выберите шаблон</h2>
               {templates.length === 0 ? (
@@ -329,10 +413,69 @@ export function ContractWizard({
             </div>
           )}
 
-          {step === 4 && selectedTemplate && (
+          {step === 3 && mode === 'generative' && (
             <div>
-              <h2 className="mb-3 text-lg font-semibold text-gray-900">Заполните поля</h2>
+              <h2 className="mb-3 text-lg font-semibold text-gray-900">Материалы и примеры</h2>
 
+              <p className="mb-2 text-sm font-medium text-gray-700">
+                Материалы для учёта (необязательно)
+              </p>
+              {materials.length === 0 ? (
+                <p className="mb-4 text-sm text-gray-500">
+                  Нет материалов — добавьте их в разделе «Материалы».
+                </p>
+              ) : (
+                <div className="mb-4 space-y-2">
+                  {materials.map((m) => (
+                    <label
+                      key={m.id}
+                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 p-3 text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedMaterialIds.includes(m.id)}
+                        onChange={() => setSelectedMaterialIds((prev) => toggleInArray(prev, m.id))}
+                      />
+                      {m.name}
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              <p className="mb-2 text-sm font-medium text-gray-700">
+                Примеры-образцы стиля — до 2 (необязательно)
+              </p>
+              {exampleCases.length === 0 ? (
+                <p className="text-sm text-gray-500">Пока нет готовых договоров для примера.</p>
+              ) : (
+                <div className="space-y-2">
+                  {exampleCases.map((c) => {
+                    const checked = selectedExampleIds.includes(c.id);
+                    const disabled = !checked && selectedExampleIds.length >= 2;
+                    return (
+                      <label
+                        key={c.id}
+                        className={`flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 p-3 text-sm ${
+                          disabled ? 'opacity-40' : ''
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={disabled}
+                          onChange={() => setSelectedExampleIds((prev) => toggleInArray(prev, c.id))}
+                        />
+                        {c.title}
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 4 && (
+            <div>
               {!isNewVersion && (
                 <div className="mb-4">
                   <label className="mb-1 block text-sm font-medium text-gray-700">Название дела</label>
@@ -344,102 +487,142 @@ export function ContractWizard({
                     }`}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
                   />
-                  <p className="mt-1 text-xs text-gray-400">
-                    Договор попадёт в дело клиента. Если оставить пустым — подставим название по
-                    умолчанию.
-                  </p>
                 </div>
               )}
 
-              <div className="space-y-3">
-                {selectedTemplate.fields
-                  .filter((f) => f.source.type !== 'signature' && f.source.type !== 'stamp')
-                  .map((field) => {
-                    if (field.source.type === 'org_requisite') {
-                      const req = orgValueByKey.get(field.source.field_key);
-                      return (
-                        <div key={field.id}>
-                          <label className="mb-1 block text-sm font-medium text-gray-700">
-                            {field.name}
-                          </label>
-                          <input
-                            readOnly
-                            value={req?.field_value ?? ''}
-                            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600"
-                          />
-                          <p className="mt-1 text-xs text-gray-400">Из реквизитов организации</p>
-                        </div>
-                      );
-                    }
+              {mode === 'strict' && selectedTemplate && (
+                <>
+                  <h2 className="mb-3 text-lg font-semibold text-gray-900">Заполните поля</h2>
+                  <div className="space-y-3">
+                    {selectedTemplate.fields
+                      .filter((f) => f.source.type !== 'signature' && f.source.type !== 'stamp')
+                      .map((field) => {
+                        if (field.source.type === 'org_requisite') {
+                          const req = orgValueByKey.get(field.source.field_key);
+                          return (
+                            <div key={field.id}>
+                              <label className="mb-1 block text-sm font-medium text-gray-700">
+                                {field.name}
+                              </label>
+                              <input
+                                readOnly
+                                value={req?.field_value ?? ''}
+                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600"
+                              />
+                              <p className="mt-1 text-xs text-gray-400">Из реквизитов организации</p>
+                            </div>
+                          );
+                        }
 
-                    if (field.source.type === 'client_requisite') {
-                      const value = clientValues[field.source.field_key];
-                      if (value !== undefined) {
-                        return (
-                          <div key={field.id}>
-                            <label className="mb-1 block text-sm font-medium text-gray-700">
-                              {field.name}
-                            </label>
-                            <input
-                              readOnly
-                              value={value}
-                              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600"
-                            />
-                            <p className="mt-1 text-xs text-gray-400">Из реквизитов клиента</p>
-                          </div>
-                        );
-                      }
-                      return (
-                        <div key={field.id}>
-                          <label className="mb-1 block text-sm font-medium text-gray-700">
-                            {field.name}
-                          </label>
-                          <input
-                            value={manualValues[field.id] ?? ''}
-                            onChange={(e) =>
-                              setManualValues((prev) => ({ ...prev, [field.id]: e.target.value }))
-                            }
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-                          />
-                          <p className="mt-1 text-xs text-gray-400">
-                            У клиента нет этого реквизита — впишите вручную
-                          </p>
-                        </div>
-                      );
-                    }
+                        if (field.source.type === 'client_requisite') {
+                          const value = clientValues[field.source.field_key];
+                          if (value !== undefined) {
+                            return (
+                              <div key={field.id}>
+                                <label className="mb-1 block text-sm font-medium text-gray-700">
+                                  {field.name}
+                                </label>
+                                <input
+                                  readOnly
+                                  value={value}
+                                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600"
+                                />
+                                <p className="mt-1 text-xs text-gray-400">Из реквизитов клиента</p>
+                              </div>
+                            );
+                          }
+                          return (
+                            <div key={field.id}>
+                              <label className="mb-1 block text-sm font-medium text-gray-700">
+                                {field.name}
+                              </label>
+                              <input
+                                value={manualValues[field.id] ?? ''}
+                                onChange={(e) =>
+                                  setManualValues((prev) => ({ ...prev, [field.id]: e.target.value }))
+                                }
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                              />
+                              <p className="mt-1 text-xs text-gray-400">
+                                У клиента нет этого реквизита — впишите вручную
+                              </p>
+                            </div>
+                          );
+                        }
 
-                    if (field.source.type === 'manual') {
-                      const inputType =
-                        field.source.input_type === 'date'
-                          ? 'date'
-                          : field.source.input_type === 'amount' || field.source.input_type === 'number'
-                            ? 'number'
-                            : 'text';
-                      return (
-                        <div key={field.id}>
-                          <label className="mb-1 block text-sm font-medium text-gray-700">
-                            {field.name}
-                          </label>
-                          <input
-                            type={inputType}
-                            step={field.source.input_type === 'amount' ? '0.01' : undefined}
-                            value={manualValues[field.id] ?? ''}
-                            onChange={(e) =>
-                              setManualValues((prev) => ({ ...prev, [field.id]: e.target.value }))
-                            }
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-                          />
-                          <p className="mt-1 text-xs text-gray-400">
-                            Ручной ввод ({MANUAL_INPUT_LABELS[field.source.input_type]})
-                          </p>
-                        </div>
-                      );
-                    }
+                        if (field.source.type === 'manual') {
+                          const inputType =
+                            field.source.input_type === 'date'
+                              ? 'date'
+                              : field.source.input_type === 'amount' ||
+                                  field.source.input_type === 'number'
+                                ? 'number'
+                                : 'text';
+                          return (
+                            <div key={field.id}>
+                              <label className="mb-1 block text-sm font-medium text-gray-700">
+                                {field.name}
+                              </label>
+                              <input
+                                type={inputType}
+                                step={field.source.input_type === 'amount' ? '0.01' : undefined}
+                                value={manualValues[field.id] ?? ''}
+                                onChange={(e) =>
+                                  setManualValues((prev) => ({ ...prev, [field.id]: e.target.value }))
+                                }
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                              />
+                              <p className="mt-1 text-xs text-gray-400">
+                                Ручной ввод ({MANUAL_INPUT_LABELS[field.source.input_type]})
+                              </p>
+                            </div>
+                          );
+                        }
 
-                    return null;
-                  })}
-              </div>
+                        return null;
+                      })}
+                  </div>
+                </>
+              )}
+
+              {mode === 'assisted' && (
+                <>
+                  <h2 className="mb-3 text-lg font-semibold text-gray-900">Что изменить в шаблоне</h2>
+                  <textarea
+                    value={instruction}
+                    onChange={(e) => setInstruction(e.target.value)}
+                    rows={5}
+                    placeholder="Например: убери пункт про предоплату, добавь раздел о конфиденциальности, срок сделай 3 месяца"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                  />
+                  <p className="mt-1 text-xs text-gray-400">
+                    ИИ изменит структуру шаблона и соберёт .docx с оформлением по умолчанию.
+                  </p>
+                </>
+              )}
+
+              {mode === 'generative' && (
+                <>
+                  <h2 className="mb-3 text-lg font-semibold text-gray-900">Опишите договор</h2>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={5}
+                    placeholder="Например: договор оказания услуг по онлайн-обучению на 3 месяца, с рассрочкой оплаты и правом расторжения"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                  />
+                  <p className="mt-1 text-xs text-gray-400">
+                    ИИ соберёт договор по описанию, материалам и примерам.
+                  </p>
+                </>
+              )}
             </div>
+          )}
+
+          {generating && (mode === 'assisted' || mode === 'generative') && (
+            <p className="mt-4 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-700">
+              ИИ работает над договором, это может занять до минуты…
+            </p>
           )}
 
           {error && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
@@ -458,9 +641,7 @@ export function ContractWizard({
               <button
                 type="button"
                 onClick={goNext}
-                disabled={
-                  (step === 1 && !selectedClientId) || (step === 3 && !selectedTemplateId)
-                }
+                disabled={(step === 1 && !selectedClientId) || (step === 3 && !canProceedFromStep3)}
                 className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
               >
                 Далее
@@ -468,10 +649,11 @@ export function ContractWizard({
             ) : (
               <button
                 type="button"
-                onClick={() => setShowSignatureDialog(true)}
-                className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+                onClick={onGenerateClick}
+                disabled={generating || !canGenerate}
+                className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
               >
-                Сгенерировать договор
+                {generating ? 'Готовим…' : 'Сгенерировать договор'}
               </button>
             )}
           </div>
@@ -525,7 +707,7 @@ export function ContractWizard({
               </button>
               <button
                 type="button"
-                onClick={handleGenerate}
+                onClick={handleGenerateStrict}
                 disabled={generating}
                 className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
               >

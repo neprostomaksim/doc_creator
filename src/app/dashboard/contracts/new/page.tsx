@@ -32,6 +32,17 @@ export default async function NewContractPage({
     .select('id, name, type')
     .order('created_at', { ascending: false });
 
+  const { data: materials } = await supabase
+    .from('materials')
+    .select('id, name')
+    .order('created_at', { ascending: false });
+
+  const { data: exampleCases } = await supabase
+    .from('cases')
+    .select('id, title')
+    .order('created_at', { ascending: false })
+    .limit(20);
+
   return (
     <ContractWizard
       clients={clients ?? []}
@@ -43,6 +54,8 @@ export default async function NewContractPage({
       }))}
       orgRequisites={orgRequisites ?? []}
       stamps={stamps ?? []}
+      materials={materials ?? []}
+      exampleCases={exampleCases ?? []}
       initialClientId={initialClientId}
     />
   );
