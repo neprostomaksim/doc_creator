@@ -119,7 +119,7 @@ export function RequisitesEditor({
             key={preset.id}
             type="button"
             onClick={() => applyPreset(preset.id)}
-            className="rounded-full border border-gray-300 px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
+            className="rounded-full border border-border px-3 py-1 text-sm text-fg hover:bg-surface2"
           >
             {preset.buttonLabel}
           </button>
@@ -135,14 +135,14 @@ export function RequisitesEditor({
                 onChange={(e) => updateLocal(item.id, { field_label: e.target.value })}
                 onBlur={(e) => persist(item.id, { field_label: e.target.value })}
                 placeholder="Название поля"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:w-1/3 focus:border-gray-500 focus:outline-none"
+                className="input-field sm:w-1/3"
               />
               <input
                 value={item.field_value}
                 onChange={(e) => updateLocal(item.id, { field_value: e.target.value })}
                 onBlur={(e) => persist(item.id, { field_value: e.target.value })}
                 placeholder="Значение"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm sm:flex-1 focus:border-gray-500 focus:outline-none"
+                className="input-field sm:flex-1"
               />
             </div>
 
@@ -152,7 +152,7 @@ export function RequisitesEditor({
                 onClick={() => move(item.id, -1)}
                 disabled={index === 0}
                 aria-label="Переместить выше"
-                className="rounded-md px-2 py-1 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
+                className="rounded-md px-2 py-1 text-muted hover:bg-surface2 disabled:opacity-30"
               >
                 ▲
               </button>
@@ -161,7 +161,7 @@ export function RequisitesEditor({
                 onClick={() => move(item.id, 1)}
                 disabled={index === items.length - 1}
                 aria-label="Переместить ниже"
-                className="rounded-md px-2 py-1 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
+                className="rounded-md px-2 py-1 text-muted hover:bg-surface2 disabled:opacity-30"
               >
                 ▼
               </button>
@@ -181,7 +181,7 @@ export function RequisitesEditor({
       <button
         type="button"
         onClick={addRow}
-        className="mt-3 rounded-lg border border-dashed border-gray-300 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+        className="mt-3 rounded-lg border border-dashed border-border px-3 py-2 text-sm text-muted hover:bg-surface2"
       >
         + Добавить поле
       </button>

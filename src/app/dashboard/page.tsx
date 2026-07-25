@@ -78,10 +78,10 @@ export default async function DashboardPage() {
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-gray-900">Дашборд</h1>
+        <h1 className="text-2xl font-semibold text-fg">Дашборд</h1>
         <Link
           href="/dashboard/contracts/new"
-          className="rounded-lg bg-gray-900 px-5 py-3 text-sm font-semibold text-white hover:bg-gray-800"
+          className="btn btn-primary px-5 py-3"
         >
           Создать договор
         </Link>
@@ -93,28 +93,28 @@ export default async function DashboardPage() {
           { label: 'Клиентов', value: clientsCount ?? 0 },
           { label: 'Создано за месяц', value: monthCount ?? 0 },
         ].map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-gray-200 bg-white p-4">
-            <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
-            <p className="text-sm text-gray-500">{stat.label}</p>
+          <div key={stat.label} className="card p-4">
+            <p className="text-2xl font-semibold text-fg">{stat.value}</p>
+            <p className="text-sm text-muted">{stat.label}</p>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section>
-          <h2 className="mb-3 text-sm font-medium text-gray-700">Последние договоры</h2>
+          <h2 className="mb-3 text-sm font-medium text-fg">Последние договоры</h2>
           {recent.length === 0 ? (
-            <p className="text-sm text-gray-500">Пока пусто.</p>
+            <p className="text-sm text-muted">Пока пусто.</p>
           ) : (
             <div className="space-y-2">
               {recent.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-3"
+                  className="flex items-center justify-between card p-3"
                 >
                   <Link href={`/dashboard/contracts/${item.caseId}`} className="min-w-0">
-                    <p className="truncate text-sm font-medium text-gray-900">{item.title}</p>
-                    <p className="truncate text-xs text-gray-500">
+                    <p className="truncate text-sm font-medium text-fg">{item.title}</p>
+                    <p className="truncate text-xs text-muted">
                       {item.clientName} · {new Date(item.createdAt).toLocaleDateString('ru-RU')}
                     </p>
                   </Link>
@@ -122,7 +122,7 @@ export default async function DashboardPage() {
                     <DownloadButton
                       url={item.url}
                       filename={`${item.title}.docx`}
-                      className="ml-3 shrink-0 text-xs font-medium text-gray-600 hover:text-gray-900"
+                      className="ml-3 shrink-0 text-xs font-medium text-muted hover:text-fg"
                     >
                       Скачать
                     </DownloadButton>
@@ -134,18 +134,18 @@ export default async function DashboardPage() {
         </section>
 
         <section>
-          <h2 className="mb-3 text-sm font-medium text-gray-700">Черновики</h2>
+          <h2 className="mb-3 text-sm font-medium text-fg">Черновики</h2>
           {!drafts || drafts.length === 0 ? (
-            <p className="text-sm text-gray-500">Нет черновиков.</p>
+            <p className="text-sm text-muted">Нет черновиков.</p>
           ) : (
             <div className="space-y-2">
               {drafts.map((c) => (
                 <Link
                   key={c.id}
                   href={`/dashboard/contracts/${c.id}`}
-                  className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-3 hover:border-gray-300"
+                  className="flex items-center justify-between card p-3 hover:border-border"
                 >
-                  <span className="min-w-0 truncate text-sm text-gray-900">{c.title}</span>
+                  <span className="min-w-0 truncate text-sm text-fg">{c.title}</span>
                   <span
                     className={`ml-3 shrink-0 rounded-full px-2 py-1 text-xs font-medium ${CASE_STATUS_BADGE[c.status as CaseStatus]}`}
                   >
@@ -158,19 +158,19 @@ export default async function DashboardPage() {
         </section>
 
         <section>
-          <h2 className="mb-3 text-sm font-medium text-gray-700">Частые клиенты</h2>
+          <h2 className="mb-3 text-sm font-medium text-fg">Частые клиенты</h2>
           {frequentClients.length === 0 ? (
-            <p className="text-sm text-gray-500">Пока пусто.</p>
+            <p className="text-sm text-muted">Пока пусто.</p>
           ) : (
             <div className="space-y-2">
               {frequentClients.map((c) => (
                 <Link
                   key={c.id}
                   href={`/dashboard/contracts/new?client=${c.id}`}
-                  className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-3 hover:border-gray-300"
+                  className="flex items-center justify-between card p-3 hover:border-border"
                 >
-                  <span className="min-w-0 truncate text-sm text-gray-900">{c.name}</span>
-                  <span className="ml-3 shrink-0 text-xs text-gray-500">
+                  <span className="min-w-0 truncate text-sm text-fg">{c.name}</span>
+                  <span className="ml-3 shrink-0 text-xs text-muted">
                     {c.count} {c.count === 1 ? 'дело' : 'дел'}
                   </span>
                 </Link>

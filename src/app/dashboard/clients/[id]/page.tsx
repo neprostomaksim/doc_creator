@@ -33,7 +33,7 @@ export default async function ClientDetailPage({
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-semibold text-gray-900">{client.name}</h1>
+      <h1 className="mb-4 text-2xl font-semibold text-fg">{client.name}</h1>
       <ClientCard client={client} requisites={requisites ?? []} cases={cases ?? []} />
     </div>
   );

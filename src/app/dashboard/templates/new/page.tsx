@@ -43,31 +43,31 @@ export default function NewTemplatePage() {
 
   return (
     <div className="max-w-lg">
-      <h1 className="mb-4 text-2xl font-semibold text-gray-900">Новый шаблон</h1>
+      <h1 className="mb-4 text-2xl font-semibold text-fg">Новый шаблон</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-gray-200 bg-white p-4">
+      <form onSubmit={handleSubmit} className="space-y-4 card p-4">
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Название</label>
+          <label className="label">Название</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Например, «Договор оказания услуг»"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+            className="input-field"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Категория</label>
+          <label className="label">Категория</label>
           <input
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             placeholder="Например, «Услуги»"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+            className="input-field"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Файл договора (.docx)</label>
+          <label className="label">Файл договора (.docx)</label>
           <input
             type="file"
             accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -76,12 +76,12 @@ export default function NewTemplatePage() {
           />
         </div>
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {error && <p className="rounded-lg px-3 py-2 text-sm text-[var(--danger)] bg-[var(--danger-soft)]">{error}</p>}
 
         <button
           type="submit"
           disabled={uploading}
-          className="w-full rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+          className="btn btn-primary w-full"
         >
           {uploading ? 'Загружаем и разбираем…' : 'Загрузить'}
         </button>

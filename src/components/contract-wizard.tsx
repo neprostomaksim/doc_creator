@@ -259,23 +259,23 @@ export function ContractWizard({
             <div
               className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
                 step === i + 1
-                  ? 'bg-gray-900 text-white'
+                  ? 'bg-accent text-white'
                   : step > i + 1
-                    ? 'bg-gray-300 text-gray-700'
-                    : 'bg-gray-100 text-gray-400'
+                    ? 'bg-surface2 text-fg'
+                    : 'bg-surface2 text-muted'
               }`}
             >
               {i + 1}
             </div>
-            <span className="ml-2 hidden text-sm text-gray-600 sm:inline">{label}</span>
+            <span className="ml-2 hidden text-sm text-muted sm:inline">{label}</span>
             {i < labels.length - 1 && <div className="mx-2 h-px flex-1 bg-gray-200" />}
           </div>
         ))}
       </div>
 
       {result ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <h2 className="mb-2 text-lg font-semibold text-gray-900">Договор готов</h2>
+        <div className="card p-5">
+          <h2 className="mb-2 text-lg font-semibold text-fg">Договор готов</h2>
           {result.warnings.length > 0 && (
             <div className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
               <p className="mb-1 font-medium">Проверьте перед отправкой:</p>
@@ -290,29 +290,29 @@ export function ContractWizard({
             <button
               type="button"
               onClick={() => handleDownload(result.url, result.filename)}
-              className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+              className="btn btn-primary"
             >
               Скачать {result.filename}
             </button>
             <Link
               href={`/dashboard/contracts/${result.caseId}`}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="btn btn-secondary"
             >
               Открыть дело
             </Link>
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <div className="card p-5">
           {step === 1 && (
             <div>
-              <h2 className="mb-3 text-lg font-semibold text-gray-900">Выберите клиента</h2>
+              <h2 className="mb-3 text-lg font-semibold text-fg">Выберите клиента</h2>
               <div className="space-y-2">
                 {clientList.map((client) => (
                   <label
                     key={client.id}
                     className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm ${
-                      selectedClientId === client.id ? 'border-gray-900' : 'border-gray-200'
+                      selectedClientId === client.id ? 'border-accent' : 'border-border'
                     }`}
                   >
                     <input
@@ -331,13 +331,13 @@ export function ContractWizard({
                     value={newClientName}
                     onChange={(e) => setNewClientName(e.target.value)}
                     placeholder="Название клиента"
-                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                    className="input-field flex-1"
                   />
                   <button
                     type="button"
                     onClick={handleCreateClient}
                     disabled={creatingClient}
-                    className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                    className="btn btn-primary"
                   >
                     Создать
                   </button>
@@ -346,7 +346,7 @@ export function ContractWizard({
                 <button
                   type="button"
                   onClick={() => setNewClientMode(true)}
-                  className="mt-3 text-sm font-medium text-gray-600 hover:text-gray-900"
+                  className="mt-3 text-sm font-medium text-muted hover:text-fg"
                 >
                   + Новый клиент
                 </button>
@@ -356,13 +356,13 @@ export function ContractWizard({
 
           {step === 2 && (
             <div>
-              <h2 className="mb-3 text-lg font-semibold text-gray-900">Выберите режим</h2>
+              <h2 className="mb-3 text-lg font-semibold text-fg">Выберите режим</h2>
               <div className="space-y-2">
                 {MODE_INFO.map((m) => (
                   <label
                     key={m.id}
                     className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 text-sm ${
-                      mode === m.id ? 'border-gray-900 bg-gray-50' : 'border-gray-200'
+                      mode === m.id ? 'border-accent bg-surface2' : 'border-border'
                     }`}
                   >
                     <input
@@ -372,8 +372,8 @@ export function ContractWizard({
                       className="mt-0.5"
                     />
                     <span>
-                      <span className="font-medium text-gray-900">{m.label}</span>
-                      <span className="block text-xs text-gray-500">{m.hint}</span>
+                      <span className="font-medium text-fg">{m.label}</span>
+                      <span className="block text-xs text-muted">{m.hint}</span>
                     </span>
                   </label>
                 ))}
@@ -383,16 +383,16 @@ export function ContractWizard({
 
           {step === 3 && mode !== 'generative' && (
             <div>
-              <h2 className="mb-3 text-lg font-semibold text-gray-900">Выберите шаблон</h2>
+              <h2 className="mb-3 text-lg font-semibold text-fg">Выберите шаблон</h2>
               {templates.length === 0 ? (
-                <p className="text-sm text-gray-500">Сначала загрузите шаблон в разделе «Шаблоны».</p>
+                <p className="text-sm text-muted">Сначала загрузите шаблон в разделе «Шаблоны».</p>
               ) : (
                 <div className="space-y-2">
                   {templates.map((template) => (
                     <label
                       key={template.id}
                       className={`flex cursor-pointer items-center justify-between rounded-lg border p-3 text-sm ${
-                        selectedTemplateId === template.id ? 'border-gray-900' : 'border-gray-200'
+                        selectedTemplateId === template.id ? 'border-accent' : 'border-border'
                       }`}
                     >
                       <span className="flex items-center gap-2">
@@ -404,7 +404,7 @@ export function ContractWizard({
                         {template.name}
                       </span>
                       {template.category && (
-                        <span className="text-xs text-gray-400">{template.category}</span>
+                        <span className="text-xs text-muted">{template.category}</span>
                       )}
                     </label>
                   ))}
@@ -415,13 +415,13 @@ export function ContractWizard({
 
           {step === 3 && mode === 'generative' && (
             <div>
-              <h2 className="mb-3 text-lg font-semibold text-gray-900">Материалы и примеры</h2>
+              <h2 className="mb-3 text-lg font-semibold text-fg">Материалы и примеры</h2>
 
-              <p className="mb-2 text-sm font-medium text-gray-700">
+              <p className="mb-2 text-sm font-medium text-fg">
                 Материалы для учёта (необязательно)
               </p>
               {materials.length === 0 ? (
-                <p className="mb-4 text-sm text-gray-500">
+                <p className="mb-4 text-sm text-muted">
                   Нет материалов — добавьте их в разделе «Материалы».
                 </p>
               ) : (
@@ -429,7 +429,7 @@ export function ContractWizard({
                   {materials.map((m) => (
                     <label
                       key={m.id}
-                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 p-3 text-sm"
+                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-border p-3 text-sm"
                     >
                       <input
                         type="checkbox"
@@ -442,11 +442,11 @@ export function ContractWizard({
                 </div>
               )}
 
-              <p className="mb-2 text-sm font-medium text-gray-700">
+              <p className="mb-2 text-sm font-medium text-fg">
                 Примеры-образцы стиля — до 2 (необязательно)
               </p>
               {exampleCases.length === 0 ? (
-                <p className="text-sm text-gray-500">Пока нет готовых договоров для примера.</p>
+                <p className="text-sm text-muted">Пока нет готовых договоров для примера.</p>
               ) : (
                 <div className="space-y-2">
                   {exampleCases.map((c) => {
@@ -455,7 +455,7 @@ export function ContractWizard({
                     return (
                       <label
                         key={c.id}
-                        className={`flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 p-3 text-sm ${
+                        className={`flex cursor-pointer items-center gap-2 rounded-lg border border-border p-3 text-sm ${
                           disabled ? 'opacity-40' : ''
                         }`}
                       >
@@ -478,21 +478,21 @@ export function ContractWizard({
             <div>
               {!isNewVersion && (
                 <div className="mb-4">
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Название дела</label>
+                  <label className="label">Название дела</label>
                   <input
                     value={caseTitle}
                     onChange={(e) => setCaseTitle(e.target.value)}
                     placeholder={`Договор с ${
                       clientList.find((c) => c.id === selectedClientId)?.name ?? 'клиентом'
                     }`}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                    className="input-field"
                   />
                 </div>
               )}
 
               {mode === 'strict' && selectedTemplate && (
                 <>
-                  <h2 className="mb-3 text-lg font-semibold text-gray-900">Заполните поля</h2>
+                  <h2 className="mb-3 text-lg font-semibold text-fg">Заполните поля</h2>
                   <div className="space-y-3">
                     {selectedTemplate.fields
                       .filter((f) => f.source.type !== 'signature' && f.source.type !== 'stamp')
@@ -501,15 +501,15 @@ export function ContractWizard({
                           const req = orgValueByKey.get(field.source.field_key);
                           return (
                             <div key={field.id}>
-                              <label className="mb-1 block text-sm font-medium text-gray-700">
+                              <label className="label">
                                 {field.name}
                               </label>
                               <input
                                 readOnly
                                 value={req?.field_value ?? ''}
-                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600"
+                                className="w-full rounded-lg border border-border bg-surface2 px-3 py-2 text-sm text-muted"
                               />
-                              <p className="mt-1 text-xs text-gray-400">Из реквизитов организации</p>
+                              <p className="mt-1 text-xs text-muted">Из реквизитов организации</p>
                             </div>
                           );
                         }
@@ -519,21 +519,21 @@ export function ContractWizard({
                           if (value !== undefined) {
                             return (
                               <div key={field.id}>
-                                <label className="mb-1 block text-sm font-medium text-gray-700">
+                                <label className="label">
                                   {field.name}
                                 </label>
                                 <input
                                   readOnly
                                   value={value}
-                                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600"
+                                  className="w-full rounded-lg border border-border bg-surface2 px-3 py-2 text-sm text-muted"
                                 />
-                                <p className="mt-1 text-xs text-gray-400">Из реквизитов клиента</p>
+                                <p className="mt-1 text-xs text-muted">Из реквизитов клиента</p>
                               </div>
                             );
                           }
                           return (
                             <div key={field.id}>
-                              <label className="mb-1 block text-sm font-medium text-gray-700">
+                              <label className="label">
                                 {field.name}
                               </label>
                               <input
@@ -541,9 +541,9 @@ export function ContractWizard({
                                 onChange={(e) =>
                                   setManualValues((prev) => ({ ...prev, [field.id]: e.target.value }))
                                 }
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                                className="input-field"
                               />
-                              <p className="mt-1 text-xs text-gray-400">
+                              <p className="mt-1 text-xs text-muted">
                                 У клиента нет этого реквизита — впишите вручную
                               </p>
                             </div>
@@ -560,7 +560,7 @@ export function ContractWizard({
                                 : 'text';
                           return (
                             <div key={field.id}>
-                              <label className="mb-1 block text-sm font-medium text-gray-700">
+                              <label className="label">
                                 {field.name}
                               </label>
                               <input
@@ -570,9 +570,9 @@ export function ContractWizard({
                                 onChange={(e) =>
                                   setManualValues((prev) => ({ ...prev, [field.id]: e.target.value }))
                                 }
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                                className="input-field"
                               />
-                              <p className="mt-1 text-xs text-gray-400">
+                              <p className="mt-1 text-xs text-muted">
                                 Ручной ввод ({MANUAL_INPUT_LABELS[field.source.input_type]})
                               </p>
                             </div>
@@ -587,15 +587,15 @@ export function ContractWizard({
 
               {mode === 'assisted' && (
                 <>
-                  <h2 className="mb-3 text-lg font-semibold text-gray-900">Что изменить в шаблоне</h2>
+                  <h2 className="mb-3 text-lg font-semibold text-fg">Что изменить в шаблоне</h2>
                   <textarea
                     value={instruction}
                     onChange={(e) => setInstruction(e.target.value)}
                     rows={5}
                     placeholder="Например: убери пункт про предоплату, добавь раздел о конфиденциальности, срок сделай 3 месяца"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                    className="input-field"
                   />
-                  <p className="mt-1 text-xs text-gray-400">
+                  <p className="mt-1 text-xs text-muted">
                     ИИ изменит структуру шаблона и соберёт .docx с оформлением по умолчанию.
                   </p>
                 </>
@@ -603,15 +603,15 @@ export function ContractWizard({
 
               {mode === 'generative' && (
                 <>
-                  <h2 className="mb-3 text-lg font-semibold text-gray-900">Опишите договор</h2>
+                  <h2 className="mb-3 text-lg font-semibold text-fg">Опишите договор</h2>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={5}
                     placeholder="Например: договор оказания услуг по онлайн-обучению на 3 месяца, с рассрочкой оплаты и правом расторжения"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                    className="input-field"
                   />
-                  <p className="mt-1 text-xs text-gray-400">
+                  <p className="mt-1 text-xs text-muted">
                     ИИ соберёт договор по описанию, материалам и примерам.
                   </p>
                 </>
@@ -625,14 +625,14 @@ export function ContractWizard({
             </p>
           )}
 
-          {error && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+          {error && <p className="mt-4 rounded-lg px-3 py-2 text-sm text-[var(--danger)] bg-[var(--danger-soft)]">{error}</p>}
 
           <div className="mt-5 flex justify-between">
             <button
               type="button"
               onClick={goBack}
               disabled={step === 1 || isNewVersion}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-0"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-muted hover:bg-surface2 disabled:opacity-0"
             >
               Назад
             </button>
@@ -642,7 +642,7 @@ export function ContractWizard({
                 type="button"
                 onClick={goNext}
                 disabled={(step === 1 && !selectedClientId) || (step === 3 && !canProceedFromStep3)}
-                className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+                className="btn btn-primary disabled:opacity-50"
               >
                 Далее
               </button>
@@ -651,7 +651,7 @@ export function ContractWizard({
                 type="button"
                 onClick={onGenerateClick}
                 disabled={generating || !canGenerate}
-                className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+                className="btn btn-primary disabled:opacity-50"
               >
                 {generating ? 'Готовим…' : 'Сгенерировать договор'}
               </button>
@@ -661,16 +661,16 @@ export function ContractWizard({
       )}
 
       {showSignatureDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-          <div className="w-full max-w-sm rounded-xl bg-white p-5">
-            <h2 className="mb-3 text-lg font-semibold text-gray-900">Подпись и печать</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">
+          <div className="card animate-modal w-full max-w-sm p-5 shadow-[var(--shadow)]">
+            <h2 className="mb-3 text-lg font-semibold text-fg">Подпись и печать</h2>
 
             <div className="mb-3">
-              <label className="mb-1 block text-sm font-medium text-gray-700">Подпись</label>
+              <label className="label">Подпись</label>
               <select
                 value={selectedSignatureId}
                 onChange={(e) => setSelectedSignatureId(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                className="input-field"
               >
                 <option value="">Без подписи</option>
                 {signatures.map((s) => (
@@ -682,11 +682,11 @@ export function ContractWizard({
             </div>
 
             <div className="mb-4">
-              <label className="mb-1 block text-sm font-medium text-gray-700">Печать</label>
+              <label className="label">Печать</label>
               <select
                 value={selectedStampId}
                 onChange={(e) => setSelectedStampId(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                className="input-field"
               >
                 <option value="">Без печати</option>
                 {stampImages.map((s) => (
@@ -701,7 +701,7 @@ export function ContractWizard({
               <button
                 type="button"
                 onClick={() => setShowSignatureDialog(false)}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-muted hover:bg-surface2"
               >
                 Отмена
               </button>
@@ -709,7 +709,7 @@ export function ContractWizard({
                 type="button"
                 onClick={handleGenerateStrict}
                 disabled={generating}
-                className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+                className="btn btn-primary disabled:opacity-50"
               >
                 {generating ? 'Готовим…' : 'Готово'}
               </button>

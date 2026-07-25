@@ -20,7 +20,7 @@ export default async function MaterialDetailPage({
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-semibold text-gray-900">{material.name}</h1>
+      <h1 className="mb-4 text-2xl font-semibold text-fg">{material.name}</h1>
       <MaterialEditor material={material} />
     </div>
   );

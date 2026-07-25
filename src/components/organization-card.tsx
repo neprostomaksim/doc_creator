@@ -56,18 +56,18 @@ export function OrganizationCard({
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
+    <div className="card p-4">
       <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start">
         <div className="shrink-0">
-          <div className="checkered-bg flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg border border-gray-200">
+          <div className="checkered-bg flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg border border-border">
             {logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={logoUrl} alt="Логотип организации" className="h-full w-full object-contain" />
             ) : (
-              <span className="text-xs text-gray-400">Нет лого</span>
+              <span className="text-xs text-muted">Нет лого</span>
             )}
           </div>
-          <label className="mt-2 block cursor-pointer text-center text-xs font-medium text-gray-600 hover:text-gray-900">
+          <label className="mt-2 block cursor-pointer text-center text-xs font-medium text-muted hover:text-fg">
             {uploading ? 'Загрузка…' : 'Загрузить'}
             <input type="file" accept="image/png" className="hidden" onChange={handleLogoChange} />
           </label>
@@ -75,21 +75,21 @@ export function OrganizationCard({
 
         <div className="flex flex-1 flex-col gap-3">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Название организации</label>
+            <label className="label">Название организации</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               onBlur={(e) => persistOrganization({ name: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+              className="input-field"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Страна</label>
+            <label className="label">Страна</label>
             <input
               value={country}
               onChange={(e) => setCountry(e.target.value)}
               onBlur={(e) => persistOrganization({ country: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+              className="input-field"
             />
           </div>
         </div>
@@ -102,7 +102,7 @@ export function OrganizationCard({
         </p>
       )}
 
-      <h2 className="mb-2 text-sm font-medium text-gray-700">Реквизиты</h2>
+      <h2 className="mb-2 text-sm font-medium text-fg">Реквизиты</h2>
       <RequisitesEditor
         ownerType="organization"
         ownerId={organization.id}

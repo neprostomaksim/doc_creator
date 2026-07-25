@@ -30,7 +30,7 @@ export default async function VersionEditorPage({
     <div>
       <Link
         href={`/dashboard/contracts/${caseId}`}
-        className="mb-3 inline-block text-sm text-gray-500 hover:text-gray-900"
+        className="mb-3 inline-block text-sm text-muted hover:text-fg"
       >
         ← Назад к делу
       </Link>

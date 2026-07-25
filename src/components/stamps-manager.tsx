@@ -72,24 +72,24 @@ export function StampsManager({ userId, stamps }: { userId: string; stamps: Stam
 
   return (
     <div>
-      <form onSubmit={handleSubmit} className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
+      <form onSubmit={handleSubmit} className="mb-6 card p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1">
-            <label className="mb-1 block text-sm font-medium text-gray-700">Название</label>
+            <label className="label">Название</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Например, «Подпись директора»"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+              className="input-field"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Тип</label>
+            <label className="label">Тип</label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value as 'signature' | 'stamp')}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+              className="input-field"
             >
               <option value="signature">Подпись</option>
               <option value="stamp">Печать</option>
@@ -97,7 +97,7 @@ export function StampsManager({ userId, stamps }: { userId: string; stamps: Stam
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Файл (PNG)</label>
+            <label className="label">Файл (PNG)</label>
             <input
               type="file"
               accept="image/png"
@@ -109,7 +109,7 @@ export function StampsManager({ userId, stamps }: { userId: string; stamps: Stam
           <button
             type="submit"
             disabled={uploading}
-            className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+            className="btn btn-primary disabled:opacity-50"
           >
             {uploading ? 'Загружаем…' : 'Добавить'}
           </button>
@@ -121,23 +121,23 @@ export function StampsManager({ userId, stamps }: { userId: string; stamps: Stam
             белым прямоугольником.
           </p>
         )}
-        {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {error && <p className="mt-3 rounded-lg px-3 py-2 text-sm text-[var(--danger)] bg-[var(--danger-soft)]">{error}</p>}
       </form>
 
       {stamps.length === 0 ? (
-        <p className="text-sm text-gray-500">Пока ничего не загружено.</p>
+        <p className="text-sm text-muted">Пока ничего не загружено.</p>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
           {stamps.map((stamp) => (
-            <div key={stamp.id} className="rounded-xl border border-gray-200 bg-white p-3">
+            <div key={stamp.id} className="card p-3">
               <div className="checkered-bg mb-2 flex h-24 items-center justify-center overflow-hidden rounded-lg">
                 {stamp.signedUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={stamp.signedUrl} alt={stamp.name} className="h-full w-full object-contain" />
                 )}
               </div>
-              <p className="truncate text-sm font-medium text-gray-900">{stamp.name}</p>
-              <p className="mb-2 text-xs text-gray-500">
+              <p className="truncate text-sm font-medium text-fg">{stamp.name}</p>
+              <p className="mb-2 text-xs text-muted">
                 {stamp.type === 'signature' ? 'Подпись' : 'Печать'}
               </p>
               <button

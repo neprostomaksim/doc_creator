@@ -182,12 +182,12 @@ export function TemplateMarkupEditor({
   function SelectionToolbar({ unitId }: { unitId: string }) {
     if (selection?.unitId !== unitId) return null;
     return (
-      <div className="mt-1 flex flex-wrap items-center gap-2 rounded-lg bg-gray-50 px-2 py-1 text-xs">
-        <span className="truncate text-gray-500">Выделено: «{selection.text}»</span>
+      <div className="mt-1 flex flex-wrap items-center gap-2 rounded-lg bg-surface2 px-2 py-1 text-xs">
+        <span className="truncate text-muted">Выделено: «{selection.text}»</span>
         <button
           type="button"
           onClick={() => setDialog({ unitId, text: selection.text })}
-          className="rounded-md bg-gray-900 px-2 py-1 font-medium text-white"
+          className="rounded-md bg-accent px-2 py-1 font-medium text-white"
         >
           Сделать полем
         </button>
@@ -201,37 +201,37 @@ export function TemplateMarkupEditor({
 
   return (
     <div>
-      <div className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2">
+      <div className="mb-4 grid grid-cols-1 gap-3 card p-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Название шаблона</label>
+          <label className="label">Название шаблона</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             onBlur={(e) => persistMeta({ name: e.target.value })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+            className="input-field"
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Категория</label>
+          <label className="label">Категория</label>
           <input
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             onBlur={(e) => persistMeta({ category: e.target.value || null })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+            className="input-field"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
-        <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
+        <div className="space-y-3 card p-4">
           {blocks.length === 0 && (
-            <p className="text-sm text-gray-500">Не удалось распознать текст в этом файле.</p>
+            <p className="text-sm text-muted">Не удалось распознать текст в этом файле.</p>
           )}
 
           {blocks.map((block) => {
             if (block.type === 'list') {
               return (
-                <ul key={block.id} className="list-disc space-y-1 pl-5 text-sm text-gray-800">
+                <ul key={block.id} className="list-disc space-y-1 pl-5 text-sm text-fg">
                   {block.items.map((item) => (
                     <li key={item.id}>
                       <span ref={registerRef(item.id)}>{renderTextWithPlaceholders(item.text)}</span>
@@ -240,7 +240,7 @@ export function TemplateMarkupEditor({
                         <button
                           type="button"
                           onClick={() => markWholeUnit(item.id, item.text)}
-                          className="ml-2 text-xs text-gray-400 hover:text-gray-700"
+                          className="ml-2 text-xs text-muted hover:text-fg"
                         >
                           Разметить целиком
                         </button>
@@ -259,7 +259,7 @@ export function TemplateMarkupEditor({
                       {block.rows.map((row, ri) => (
                         <tr key={ri}>
                           {row.map((cell) => (
-                            <td key={cell.id} className="border border-gray-200 px-2 py-1 align-top">
+                            <td key={cell.id} className="border border-border px-2 py-1 align-top">
                               <span ref={registerRef(cell.id)}>
                                 {renderTextWithPlaceholders(cell.text)}
                               </span>
@@ -268,7 +268,7 @@ export function TemplateMarkupEditor({
                                 <button
                                   type="button"
                                   onClick={() => markWholeUnit(cell.id, cell.text)}
-                                  className="mt-1 block text-xs text-gray-400 hover:text-gray-700"
+                                  className="mt-1 block text-xs text-muted hover:text-fg"
                                 >
                                   Разметить целиком
                                 </button>
@@ -285,28 +285,28 @@ export function TemplateMarkupEditor({
 
             const isTitle = block.type === 'title';
             const textClassName = isTitle
-              ? 'text-center font-semibold text-gray-900'
+              ? 'text-center font-semibold text-fg'
               : block.type === 'heading'
-                ? 'font-medium text-gray-900'
-                : 'text-sm text-gray-800';
+                ? 'font-medium text-fg'
+                : 'text-sm text-fg';
 
             return (
               <div key={block.id}>
                 <div className={textClassName}>
                   {(block.type === 'heading' || block.type === 'clause') && (
-                    <span className="mr-2 text-gray-500">{block.number}</span>
+                    <span className="mr-2 text-muted">{block.number}</span>
                   )}
                   <span ref={registerRef(block.id)}>{renderTextWithPlaceholders(block.text)}</span>
                 </div>
 
                 <SelectionToolbar unitId={block.id} />
 
-                <div className="mt-1 flex gap-3 text-xs text-gray-400">
+                <div className="mt-1 flex gap-3 text-xs text-muted">
                   {!hasSignature && (
                     <button
                       type="button"
                       onClick={() => insertSignatureOrStamp(block.id, 'signature')}
-                      className="hover:text-gray-700"
+                      className="hover:text-fg"
                     >
                       + место для подписи
                     </button>
@@ -315,7 +315,7 @@ export function TemplateMarkupEditor({
                     <button
                       type="button"
                       onClick={() => insertSignatureOrStamp(block.id, 'stamp')}
-                      className="hover:text-gray-700"
+                      className="hover:text-fg"
                     >
                       + место для печати
                     </button>
@@ -326,21 +326,21 @@ export function TemplateMarkupEditor({
           })}
         </div>
 
-        <div className="h-fit rounded-xl border border-gray-200 bg-white p-4">
-          <h2 className="mb-3 text-sm font-medium text-gray-700">Поля шаблона</h2>
+        <div className="h-fit card p-4">
+          <h2 className="mb-3 text-sm font-medium text-fg">Поля шаблона</h2>
           {fields.length === 0 ? (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted">
               Выделите текст в договоре слева и нажмите «Сделать полем».
             </p>
           ) : (
             <ul className="space-y-2">
               {fields.map((field) => (
-                <li key={field.id} className="rounded-lg border border-gray-200 p-2 text-sm">
+                <li key={field.id} className="rounded-lg border border-border p-2 text-sm">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-gray-900">{field.name}</p>
-                      <p className="truncate text-xs text-gray-500">{describeSource(field)}</p>
-                      <p className="truncate text-xs text-gray-400">{field.placeholder}</p>
+                      <p className="truncate font-medium text-fg">{field.name}</p>
+                      <p className="truncate text-xs text-muted">{describeSource(field)}</p>
+                      <p className="truncate text-xs text-muted">{field.placeholder}</p>
                     </div>
                     <button
                       type="button"

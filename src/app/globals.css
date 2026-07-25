@@ -1,32 +1,264 @@
 @import "tailwindcss";
 
+/* ── Дизайн-токены ─────────────────────────────────────────────
+   Спокойная нейтральная палитра с одним синим акцентом (эстетика iOS 26).
+   Тема: по умолчанию системная; [data-theme] принудительно переключает. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f4f5f7;
+  --bg-tint: #e9ecf3;
+  --surface: #ffffff;
+  --surface-2: #f3f4f6;
+  --fg: #1a1c1e;
+  --muted: #6b7280;
+  --border: #e6e8ec;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-fg: #ffffff;
+  --accent-soft: #e8efff;
+  --accent-soft-fg: #1d4ed8;
+  --danger: #dc2626;
+  --danger-soft: #fef2f2;
+  --warn-soft: #fff7ed;
+  --warn-fg: #9a5b1e;
+  --glass-bg: rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow: 0 1px 3px rgba(16, 24, 40, 0.07), 0 10px 30px rgba(16, 24, 40, 0.05);
+  --radius: 1rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d0e10;
+    --bg-tint: #14161a;
+    --surface: #17191c;
+    --surface-2: #212429;
+    --fg: #e8eaed;
+    --muted: #9aa0a6;
+    --border: #2a2d32;
+    --accent: #3b82f6;
+    --accent-hover: #60a5fa;
+    --accent-fg: #ffffff;
+    --accent-soft: #17233c;
+    --accent-soft-fg: #93b4fb;
+    --danger: #f87171;
+    --danger-soft: #2a1717;
+    --warn-soft: #2a2015;
+    --warn-fg: #e3b57e;
+    --glass-bg: rgba(23, 25, 28, 0.62);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0d0e10;
+  --bg-tint: #14161a;
+  --surface: #17191c;
+  --surface-2: #212429;
+  --fg: #e8eaed;
+  --muted: #9aa0a6;
+  --border: #2a2d32;
+  --accent: #3b82f6;
+  --accent-hover: #60a5fa;
+  --accent-fg: #ffffff;
+  --accent-soft: #17233c;
+  --accent-soft-fg: #93b4fb;
+  --danger: #f87171;
+  --danger-soft: #2a1717;
+  --warn-soft: #2a2015;
+  --warn-fg: #e3b57e;
+  --glass-bg: rgba(23, 25, 28, 0.62);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface-2);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background:
+    radial-gradient(1200px 600px at 100% -10%, var(--bg-tint), transparent 60%),
+    var(--bg);
+  color: var(--fg);
+  min-height: 100vh;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ── Переиспользуемые поверхности и элементы ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border-color: var(--glass-border);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.18s ease, border-color 0.18s ease, opacity 0.18s ease,
+    transform 0.18s ease;
+}
+.btn:active {
+  transform: translateY(0.5px) scale(0.99);
+}
+.btn:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+.btn-secondary {
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover {
+  background: var(--surface-2);
+}
+.btn-ghost {
+  color: var(--muted);
+}
+.btn-ghost:hover {
+  color: var(--fg);
+  background: var(--surface-2);
+}
+
+.input-field {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.input-field::placeholder {
+  color: var(--muted);
+}
+.input-field:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--fg);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.hairline {
+  border-color: var(--border);
+}
+
+/* Плавное появление контента разделов */
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-in {
+  animation: fade-rise 0.22s ease both;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-modal {
+  animation: modal-in 0.18s ease both;
+}
+
+/* Скелетоны загрузки */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-2);
+  border-radius: 0.5rem;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.35),
+    transparent
+  );
+  animation: shimmer 1.3s infinite;
+}
+:root[data-theme="dark"] .skeleton::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .skeleton::after {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  }
+}
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 /* Клетчатый фон, чтобы была видна прозрачность PNG с подписью/печатью. */
 .checkered-bg {
+  background-color: #fff;
   background-image:
     linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
     linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
@@ -36,12 +268,16 @@ body {
   background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
 }
 
-/* HTML-превью документа в духе страницы А4 (кнопка «Предпросмотр»). */
+/* HTML-превью документа в духе страницы А4 (кнопка «Предпросмотр»).
+   Всегда «белый лист» с тёмным текстом — читаемо в любой теме. */
 .doc-preview {
   font-family: 'Times New Roman', Times, serif;
+  background: #ffffff;
   color: #111;
   line-height: 1.5;
   text-align: justify;
+  padding: 2.5rem;
+  border-radius: 0.5rem;
 }
 .doc-preview .prev-title {
   text-align: center;

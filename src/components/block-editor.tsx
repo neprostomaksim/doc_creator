@@ -249,8 +249,8 @@ export function BlockEditor({
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-semibold text-gray-900">Редактор · версия {versionNumber}</h1>
-          <span className="text-xs text-gray-400">
+          <h1 className="text-xl font-semibold text-fg">Редактор · версия {versionNumber}</h1>
+          <span className="text-xs text-muted">
             {saveStatus === 'saving' ? 'Сохранение…' : saveStatus === 'saved' ? 'Сохранено' : ''}
           </span>
         </div>
@@ -258,7 +258,7 @@ export function BlockEditor({
           <button
             type="button"
             onClick={() => setPreviewHtml(blocksToPreviewHtml(blocks))}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="btn btn-secondary"
           >
             Предпросмотр
           </button>
@@ -266,7 +266,7 @@ export function BlockEditor({
             type="button"
             onClick={handleDownload}
             disabled={busy}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="btn btn-secondary disabled:opacity-50"
           >
             Скачать .docx
           </button>
@@ -274,14 +274,14 @@ export function BlockEditor({
             type="button"
             onClick={handleSaveAsNewVersion}
             disabled={busy}
-            className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+            className="btn btn-primary"
           >
             Сохранить как новую версию
           </button>
         </div>
       </div>
 
-      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 rounded-lg px-3 py-2 text-sm text-[var(--danger)] bg-[var(--danger-soft)]">{error}</p>}
 
       {proposed && (
         <div className="mb-3 flex items-center justify-between rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
@@ -293,7 +293,7 @@ export function BlockEditor({
             <button
               type="button"
               onClick={acceptChanges}
-              className="rounded-md bg-gray-900 px-3 py-1 font-medium text-white"
+              className="rounded-md bg-accent px-3 py-1 font-medium text-white"
             >
               Принять изменения
             </button>
@@ -309,7 +309,7 @@ export function BlockEditor({
             type="button"
             onClick={() => setTab(t)}
             className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium ${
-              tab === t ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'
+              tab === t ? 'bg-accent text-white' : 'bg-surface2 text-muted'
             }`}
           >
             {t === 'doc' ? 'Документ' : 'Правки'}
@@ -320,7 +320,7 @@ export function BlockEditor({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
         {/* Документ */}
         <div className={`${tab === 'doc' ? 'block' : 'hidden'} lg:block`}>
-          <div className="space-y-2 rounded-xl border border-gray-200 bg-white p-4">
+          <div className="space-y-2 card p-4">
             {viewBlocks.map((block) => (
               <BlockRow
                 key={block.id}
@@ -346,8 +346,8 @@ export function BlockEditor({
 
         {/* Чат */}
         <div className={`${tab === 'chat' ? 'block' : 'hidden'} lg:block`}>
-          <div className="flex h-[70vh] flex-col rounded-xl border border-gray-200 bg-white">
-            <div className="border-b border-gray-100 px-3 py-2 text-sm font-medium text-gray-700">
+          <div className="flex h-[70vh] flex-col rounded-xl border border-border bg-surface">
+            <div className="border-b border-border px-3 py-2 text-sm font-medium text-fg">
               Чат с ИИ
               {selectedBlockId && (
                 <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
@@ -357,7 +357,7 @@ export function BlockEditor({
             </div>
             <div className="flex-1 space-y-2 overflow-y-auto p-3">
               {messages.length === 0 && (
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-muted">
                   Напишите, что изменить. Можно выделить блок слева, чтобы править только его.
                 </p>
               )}
@@ -366,20 +366,20 @@ export function BlockEditor({
                   key={m.id}
                   className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
                     m.role === 'user'
-                      ? 'ml-auto bg-gray-900 text-white'
-                      : 'bg-gray-100 text-gray-800'
+                      ? 'ml-auto bg-accent text-white'
+                      : 'bg-surface2 text-fg'
                   }`}
                 >
                   {m.content}
                 </div>
               ))}
               {aiBusy && (
-                <div className="max-w-[85%] rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-500">
+                <div className="max-w-[85%] rounded-lg bg-surface2 px-3 py-2 text-sm text-muted">
                   ИИ думает…
                 </div>
               )}
             </div>
-            <div className="border-t border-gray-100 p-3">
+            <div className="border-t border-border p-3">
               <textarea
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
@@ -391,13 +391,13 @@ export function BlockEditor({
                 }}
                 rows={2}
                 placeholder="Например: перепиши раздел об ответственности мягче"
-                className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                className="input-field resize-none"
               />
               <button
                 type="button"
                 onClick={sendToAi}
                 disabled={aiBusy || !chatInput.trim()}
-                className="mt-2 w-full rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+                className="mt-2 btn btn-primary w-full"
               >
                 Отправить
               </button>
@@ -408,11 +408,11 @@ export function BlockEditor({
 
       {previewHtml !== null && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
           onClick={() => setPreviewHtml(null)}
         >
           <div
-            className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-8"
+            className="animate-modal max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl shadow-[var(--shadow)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div
@@ -453,7 +453,7 @@ function BlockRow({
   onAdd: (type: AddableType) => void;
 }) {
   const textAreaClass =
-    'w-full resize-none rounded-md border border-transparent bg-transparent px-2 py-1 text-sm hover:border-gray-200 focus:border-gray-400 focus:outline-none';
+    'w-full resize-none rounded-md border border-transparent bg-transparent px-2 py-1 text-sm hover:border-border focus:border-border focus:outline-none';
 
   return (
     <div
@@ -464,7 +464,7 @@ function BlockRow({
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
           {(block.type === 'heading' || block.type === 'clause') && (
-            <span className="mr-1 text-xs text-gray-400">{block.number}</span>
+            <span className="mr-1 text-xs text-muted">{block.number}</span>
           )}
 
           {(block.type === 'title' ||
@@ -486,7 +486,7 @@ function BlockRow({
             <ul className="space-y-1">
               {block.items.map((item, i) => (
                 <li key={item.id} className="flex items-center gap-1">
-                  <span className="text-gray-400">•</span>
+                  <span className="text-muted">•</span>
                   <input
                     value={item.text}
                     readOnly={readOnly}
@@ -496,7 +496,7 @@ function BlockRow({
                       );
                       onPatch({ items } as Partial<Block>);
                     }}
-                    className="w-full rounded-md border border-transparent px-2 py-1 text-sm hover:border-gray-200 focus:border-gray-400 focus:outline-none"
+                    className="w-full rounded-md border border-transparent px-2 py-1 text-sm hover:border-border focus:border-border focus:outline-none"
                   />
                   {!readOnly && (
                     <button
@@ -504,7 +504,7 @@ function BlockRow({
                       onClick={() =>
                         onPatch({ items: block.items.filter((_, j) => j !== i) } as Partial<Block>)
                       }
-                      className="text-xs text-gray-300 hover:text-red-500"
+                      className="text-xs text-muted hover:text-red-500"
                     >
                       ✕
                     </button>
@@ -520,7 +520,7 @@ function BlockRow({
                         items: [...block.items, { id: newId(), text: '' }],
                       } as Partial<Block>)
                     }
-                    className="text-xs text-gray-400 hover:text-gray-700"
+                    className="text-xs text-muted hover:text-fg"
                   >
                     + пункт
                   </button>
@@ -536,7 +536,7 @@ function BlockRow({
                   {block.rows.map((row, ri) => (
                     <tr key={ri}>
                       {row.map((cell) => (
-                        <td key={cell.id} className="border border-gray-200 p-1">
+                        <td key={cell.id} className="border border-border p-1">
                           <input
                             value={cell.text}
                             readOnly={readOnly}
@@ -564,14 +564,14 @@ function BlockRow({
               type="button"
               onClick={onSelect}
               title="Править этот блок через ИИ"
-              className={`rounded px-1 text-xs ${selected ? 'text-blue-600' : 'text-gray-400 hover:text-blue-600'}`}
+              className={`rounded px-1 text-xs ${selected ? 'text-blue-600' : 'text-muted hover:text-blue-600'}`}
             >
               ИИ
             </button>
             <button
               type="button"
               onClick={() => onMove(-1)}
-              className="rounded px-1 text-gray-400 hover:bg-gray-100"
+              className="rounded px-1 text-muted hover:bg-surface2"
               title="Вверх"
             >
               ▲
@@ -579,7 +579,7 @@ function BlockRow({
             <button
               type="button"
               onClick={() => onMove(1)}
-              className="rounded px-1 text-gray-400 hover:bg-gray-100"
+              className="rounded px-1 text-muted hover:bg-surface2"
               title="Вниз"
             >
               ▼
@@ -587,7 +587,7 @@ function BlockRow({
             <button
               type="button"
               onClick={onToggleAddMenu}
-              className="rounded px-1 text-gray-400 hover:bg-gray-100"
+              className="rounded px-1 text-muted hover:bg-surface2"
               title="Добавить блок ниже"
             >
               ＋
@@ -605,13 +605,13 @@ function BlockRow({
       </div>
 
       {addMenuOpen && !readOnly && (
-        <div className="mt-1 flex flex-wrap gap-1 rounded-lg bg-gray-50 p-2">
+        <div className="mt-1 flex flex-wrap gap-1 rounded-lg bg-surface2 p-2">
           {ADD_TYPES.map((t) => (
             <button
               key={t.type}
               type="button"
               onClick={() => onAdd(t.type)}
-              className="rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 hover:border-gray-400"
+              className="rounded-md border border-border bg-surface px-2 py-1 text-xs text-fg hover:border-border"
             >
               {t.label}
             </button>

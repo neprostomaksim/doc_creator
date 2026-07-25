@@ -47,22 +47,22 @@ export function MaterialEditor({ material }: { material: Material }) {
   }
 
   return (
-    <div className="max-w-lg space-y-4 rounded-xl border border-gray-200 bg-white p-4">
+    <div className="max-w-lg space-y-4 card p-4">
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Название</label>
+        <label className="label">Название</label>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+          className="input-field"
         />
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Тип</label>
+        <label className="label">Тип</label>
         <select
           value={type}
           onChange={(e) => setType(e.target.value as MaterialType)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+          className="input-field"
         >
           {MATERIAL_TYPES.map((t) => (
             <option key={t} value={t}>
@@ -73,24 +73,24 @@ export function MaterialEditor({ material }: { material: Material }) {
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Теги (через запятую)</label>
+        <label className="label">Теги (через запятую)</label>
         <input
           value={tags}
           onChange={(e) => setTags(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+          className="input-field"
         />
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Текст</label>
+        <label className="label">Текст</label>
         <textarea
           value={contentText}
           onChange={(e) => setContentText(e.target.value)}
           rows={10}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+          className="input-field"
         />
         {material.file_path && (
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="mt-1 text-xs text-muted">
             Текст извлечён из загруженного файла. Можно править вручную.
           </p>
         )}
@@ -105,11 +105,11 @@ export function MaterialEditor({ material }: { material: Material }) {
           Удалить
         </button>
         <div className="flex items-center gap-3">
-          {savedAt && <span className="text-xs text-gray-400">Сохранено в {savedAt}</span>}
+          {savedAt && <span className="text-xs text-muted">Сохранено в {savedAt}</span>}
           <button
             type="button"
             onClick={handleSave}
-            className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+            className="btn btn-primary"
           >
             Сохранить
           </button>

@@ -92,27 +92,27 @@ export function MarkFieldDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-5">
-        <h2 className="mb-1 text-lg font-semibold text-gray-900">Сделать полем</h2>
-        <p className="mb-4 truncate text-sm text-gray-500">«{selectedText}»</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">
+      <div className="card animate-modal w-full max-w-md p-5 shadow-[var(--shadow)]">
+        <h2 className="mb-1 text-lg font-semibold text-fg">Сделать полем</h2>
+        <p className="mb-4 truncate text-sm text-muted">«{selectedText}»</p>
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Название поля</label>
+            <label className="label">Название поля</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Например, «УНП клиента»"
               autoFocus
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+              className="input-field"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Источник значения</label>
+            <label className="label">Источник значения</label>
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm text-gray-700">
+              <label className="flex items-center gap-2 text-sm text-fg">
                 <input
                   type="radio"
                   checked={sourceType === 'org_requisite'}
@@ -124,7 +124,7 @@ export function MarkFieldDialog({
                 <select
                   value={orgKey}
                   onChange={(e) => setOrgKey(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                  className="input-field"
                 >
                   {orgRequisites.length === 0 && <option value="">Нет реквизитов — заполните в Настройках</option>}
                   {orgRequisites.map((o) => (
@@ -135,7 +135,7 @@ export function MarkFieldDialog({
                 </select>
               )}
 
-              <label className="flex items-center gap-2 text-sm text-gray-700">
+              <label className="flex items-center gap-2 text-sm text-fg">
                 <input
                   type="radio"
                   checked={sourceType === 'client_requisite'}
@@ -148,7 +148,7 @@ export function MarkFieldDialog({
                   <select
                     value={clientKey}
                     onChange={(e) => setClientKey(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                    className="input-field"
                   >
                     {clientRequisites.map((o) => (
                       <option key={o.field_key} value={o.field_key}>
@@ -161,11 +161,11 @@ export function MarkFieldDialog({
                     value={clientCustomLabel}
                     onChange={(e) => setClientCustomLabel(e.target.value)}
                     placeholder="Название поля, которое будет у клиента"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                    className="input-field"
                   />
                 ))}
 
-              <label className="flex items-center gap-2 text-sm text-gray-700">
+              <label className="flex items-center gap-2 text-sm text-fg">
                 <input
                   type="radio"
                   checked={sourceType === 'manual'}
@@ -177,7 +177,7 @@ export function MarkFieldDialog({
                 <select
                   value={manualType}
                   onChange={(e) => setManualType(e.target.value as typeof manualType)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                  className="input-field"
                 >
                   {Object.entries(MANUAL_TYPE_LABELS).map(([value, label]) => (
                     <option key={value} value={value}>
@@ -187,7 +187,7 @@ export function MarkFieldDialog({
                 </select>
               )}
 
-              <label className="flex items-center gap-2 text-sm text-gray-400">
+              <label className="flex items-center gap-2 text-sm text-muted">
                 <input
                   type="radio"
                   checked={sourceType === 'material'}
@@ -199,20 +199,20 @@ export function MarkFieldDialog({
             </div>
           </div>
 
-          {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+          {error && <p className="rounded-lg px-3 py-2 text-sm text-[var(--danger)] bg-[var(--danger-soft)]">{error}</p>}
 
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-muted hover:bg-surface2"
             >
               Отмена
             </button>
             <button
               type="button"
               onClick={handleSubmit}
-              className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+              className="btn btn-primary"
             >
               Готово
             </button>
