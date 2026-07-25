@@ -136,8 +136,9 @@ Variables). Никогда не вставляй ключи в код и не к
 
 | Таблица | Поля |
 |---|---|
-| `profiles` | id, email, full_name, created_at |
+| `profiles` | id, email, full_name, is_admin, created_at |
 | `invite_codes` | code, used_by, is_used, created_at |
+| `user_settings` | user_id, gemini_api_key, updated_at — личный ключ ИИ пользователя |
 | `organizations` | id, owner_id, name, country, logo_path — своя организация пользователя |
 | `requisites` | id, owner_type ('organization' \| 'client'), owner_id, field_key, field_label, field_value, sort_order |
 | `stamps` | id, user_id, name, type ('signature' \| 'stamp'), file_path |
@@ -147,6 +148,11 @@ Variables). Никогда не вставляй ключи в код и не к
 | `cases` | id, user_id, client_id, title, status ('draft' \| 'active' \| 'signed' \| 'archived'), created_at |
 | `contract_versions` | id, case_id, version_number, mode, template_id, blocks (jsonb), data (jsonb), docx_path, created_at |
 | `chat_messages` | id, version_id, role ('user' \| 'assistant'), content, created_at |
+
+**Роли и ключи ИИ.** Флаг `profiles.is_admin` даёт доступ к генерации кодов
+приглашения (Настройки → Приглашения); RLS `invite_codes` открыта только
+админам (функция `is_admin()`). Ключ Gemini берётся из `user_settings.gemini_api_key`
+пользователя, иначе из общего `GEMINI_API_KEY` (см. `resolveGeminiKey`).
 
 **Обязательно:** во всех таблицах — привязка к владельцу и включённый Row Level Security,
 чтобы пользователь видел только свои данные. Закладываем многопользовательскую модель сразу,

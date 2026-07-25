@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { generateBlocks, GEMINI_FLASH, GEMINI_PRO } from '@/lib/gemini';
+import { generateBlocks, resolveGeminiKey, GEMINI_FLASH, GEMINI_PRO } from '@/lib/gemini';
 import { buildEditPrompt, buildGeneratePrompt } from '@/lib/ai-prompts';
 import { buildDocxFromBlocks } from '@/lib/build-docx';
 import { saveContractVersion } from '@/lib/save-contract';
@@ -45,6 +45,14 @@ export async function POST(request: Request) {
   const { data: client } = await supabase.from('clients').select('id, name').eq('id', clientId).single();
   if (!client) return NextResponse.json({ error: 'Клиент не найден' }, { status: 404 });
 
+  const apiKey = await resolveGeminiKey(supabase);
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: 'Не задан ключ Gemini. Добавьте свой ключ в Настройках → Ключи ИИ.' },
+      { status: 400 },
+    );
+  }
+
   let blocks: Block[];
   let templateId: string | null = null;
 
@@ -64,7 +72,7 @@ export async function POST(request: Request) {
       if (!template) return NextResponse.json({ error: 'Шаблон не найден' }, { status: 404 });
 
       const prompt = buildEditPrompt(normalizeBlocks(template.blocks), instruction);
-      blocks = await generateBlocks(GEMINI_FLASH, prompt);
+      blocks = await generateBlocks(GEMINI_FLASH, prompt, apiKey);
     } else {
       const description = (body.description ?? '').trim();
       if (!description) {
@@ -99,7 +107,7 @@ export async function POST(request: Request) {
       }
 
       const prompt = buildGeneratePrompt({ description, examples, materials });
-      blocks = await generateBlocks(GEMINI_PRO, prompt);
+      blocks = await generateBlocks(GEMINI_PRO, prompt, apiKey);
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Не удалось обработать запрос';

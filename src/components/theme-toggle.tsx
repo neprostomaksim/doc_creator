@@ -15,7 +15,7 @@ function readInitial(): Theme {
   return (localStorage.getItem('theme') as Theme | null) ?? 'system';
 }
 
-export function ThemeToggle() {
+export function ThemeToggle({ compact = false }: { compact?: boolean }) {
   const [theme, setTheme] = useState<Theme>(readInitial);
 
   function cycle() {
@@ -33,13 +33,13 @@ export function ThemeToggle() {
       type="button"
       onClick={cycle}
       suppressHydrationWarning
-      className="btn btn-ghost w-full justify-start gap-2 text-sm"
+      className={`btn btn-ghost gap-2 text-sm ${compact ? 'w-auto justify-center px-2' : 'w-full justify-start'}`}
       title="Переключить тему"
     >
       <span aria-hidden suppressHydrationWarning>
         {icon}
       </span>
-      <span suppressHydrationWarning>{label}</span>
+      {!compact && <span suppressHydrationWarning>{label}</span>}
     </button>
   );
 }

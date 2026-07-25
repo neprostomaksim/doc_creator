@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { SidebarNavLinks, BottomNavLinks } from '@/components/nav-links';
+import { BottomNavLinks } from '@/components/nav-links';
 import { LogoutButton } from '@/components/logout-button';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { Sidebar } from '@/components/sidebar';
 
 export default async function DashboardLayout({
   children,
@@ -26,17 +26,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen md:flex">
-      <aside className="glass sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r p-4 md:flex">
-        <p className="mb-6 px-3 text-lg font-semibold text-fg">Договоры</p>
-        <SidebarNavLinks />
-        <div className="mt-auto space-y-1 pt-4">
-          <ThemeToggle />
-          <div className="flex items-center justify-between px-3 pt-1">
-            <span className="truncate text-sm text-muted">{displayName}</span>
-            <LogoutButton />
-          </div>
-        </div>
-      </aside>
+      <Sidebar displayName={displayName} />
 
       <div className="flex flex-1 flex-col">
         <header className="glass sticky top-0 z-30 flex items-center justify-between border-b px-4 py-3 md:hidden">

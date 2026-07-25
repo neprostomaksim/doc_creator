@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Block } from './template-types';
 
 // Flash — для правок и разбора, Pro — для генерации с нуля (см. CLAUDE.md, шаг 5).
@@ -8,20 +9,23 @@ import type { Block } from './template-types';
 export const GEMINI_FLASH = 'gemini-flash-latest';
 export const GEMINI_PRO = 'gemini-pro-latest';
 
-let client: GoogleGenAI | null = null;
+/**
+ * Ключ Gemini: сначала личный ключ пользователя из user_settings (RLS вернёт
+ * только его собственную строку), иначе общий ключ из переменной окружения.
+ */
+export async function resolveGeminiKey(supabase: SupabaseClient): Promise<string | null> {
+  const { data } = await supabase.from('user_settings').select('gemini_api_key').maybeSingle();
+  const personal = data?.gemini_api_key?.trim();
+  return personal || process.env.GEMINI_API_KEY?.trim() || null;
+}
 
-export function getGeminiClient(): GoogleGenAI {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY не задан в переменных окружения');
-  }
-  if (!client) client = new GoogleGenAI({ apiKey });
-  return client;
+function makeClient(apiKey: string): GoogleGenAI {
+  return new GoogleGenAI({ apiKey });
 }
 
 /** Запрашивает у модели строго JSON и возвращает распарсенный объект. */
-export async function generateJson(model: string, prompt: string): Promise<unknown> {
-  const ai = getGeminiClient();
+export async function generateJson(model: string, prompt: string, apiKey: string): Promise<unknown> {
+  const ai = makeClient(apiKey);
   const response = await ai.models.generateContent({
     model,
     contents: prompt,
@@ -44,11 +48,15 @@ export async function generateJson(model: string, prompt: string): Promise<unkno
  * Запрашивает у модели структуру блоков и валидирует её. Если ответ невалиден
  * — повторяет запрос один раз (как требует CLAUDE.md, шаг 5), потом бросает.
  */
-export async function generateBlocks(model: string, prompt: string): Promise<Block[]> {
+export async function generateBlocks(
+  model: string,
+  prompt: string,
+  apiKey: string,
+): Promise<Block[]> {
   let lastError: unknown;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const raw = await generateJson(model, prompt);
+      const raw = await generateJson(model, prompt, apiKey);
       return parseBlocksFromAi(raw);
     } catch (err) {
       lastError = err;

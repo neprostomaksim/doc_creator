@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-export function LogoutButton() {
+export function LogoutButton({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -14,6 +14,33 @@ export function LogoutButton() {
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();
+  }
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={handleLogout}
+        disabled={loading}
+        title="Выйти"
+        className="btn btn-ghost h-8 w-8 p-0"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width={18}
+          height={18}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.8}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <path d="M16 17l5-5-5-5M21 12H9" />
+        </svg>
+      </button>
+    );
   }
 
   return (
