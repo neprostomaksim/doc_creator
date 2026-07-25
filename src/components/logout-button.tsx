@@ -23,7 +23,7 @@ export function LogoutButton({ compact = false }: { compact?: boolean }) {
         onClick={handleLogout}
         disabled={loading}
         title="Выйти"
-        className="btn btn-ghost h-8 w-8 p-0"
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface2 hover:text-fg disabled:opacity-50"
       >
         <svg
           viewBox="0 0 24 24"

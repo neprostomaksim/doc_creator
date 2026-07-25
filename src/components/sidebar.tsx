@@ -39,8 +39,9 @@ export function Sidebar({ displayName }: { displayName: string }) {
         <button
           type="button"
           onClick={toggle}
-          title={collapsed ? 'Развернуть' : 'Свернуть'}
-          className="btn btn-ghost h-8 w-8 p-0"
+          title={collapsed ? 'Развернуть меню' : 'Свернуть меню'}
+          aria-label={collapsed ? 'Развернуть меню' : 'Свернуть меню'}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-fg transition-colors hover:bg-surface2"
         >
           <svg
             viewBox="0 0 24 24"
@@ -48,7 +49,7 @@ export function Sidebar({ displayName }: { displayName: string }) {
             height={18}
             fill="none"
             stroke="currentColor"
-            strokeWidth={1.8}
+            strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"
             aria-hidden

@@ -111,6 +111,34 @@ export function TemplateMarkupEditor({
     await supabase.from('templates').update(patch).eq('id', templateId);
   }
 
+  const [autoBusy, setAutoBusy] = useState(false);
+  const [autoMsg, setAutoMsg] = useState<string | null>(null);
+
+  async function runAutoMarkup() {
+    setAutoBusy(true);
+    setAutoMsg(null);
+    const response = await fetch('/api/templates/auto-markup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ templateId }),
+    });
+    setAutoBusy(false);
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      setAutoMsg(body?.error ?? 'Не удалось разметить автоматически');
+      return;
+    }
+    const data = (await response.json()) as { blocks: Block[]; fields: TemplateField[]; added: number };
+    setBlocks(data.blocks);
+    setFields(data.fields);
+    setAutoMsg(
+      data.added > 0
+        ? `ИИ разметил полей: ${data.added}. Проверьте справа — лишнее можно снять, недостающее добавить вручную.`
+        : 'ИИ не нашёл, что разметить. Попробуйте разметить вручную.',
+    );
+  }
+
   function addField(field: TemplateField, appendToEnd = false) {
     const units = getMarkableUnits(blocks);
     const unit = units.find((u) => u.id === field.block_id);
@@ -220,6 +248,31 @@ export function TemplateMarkupEditor({
             className="input-field"
           />
         </div>
+      </div>
+
+      <div className="mb-4 card p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-fg">Авторазметка полей</p>
+            <p className="text-xs text-muted">
+              ИИ сам найдёт реквизиты сторон, даты и суммы и проставит поля. Оформление шаблона
+              сохранится.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={runAutoMarkup}
+            disabled={autoBusy}
+            className="btn btn-primary"
+          >
+            {autoBusy ? 'ИИ размечает…' : 'Разметить автоматически (ИИ)'}
+          </button>
+        </div>
+        {autoMsg && (
+          <p className="mt-3 rounded-lg px-3 py-2 text-sm" style={{ background: 'var(--accent-soft)', color: 'var(--accent-soft-fg)' }}>
+            {autoMsg}
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">

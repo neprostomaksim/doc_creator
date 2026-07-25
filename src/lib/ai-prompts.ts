@@ -58,3 +58,45 @@ ${materialsText}
 
 Собери полную структуру договора: заголовок, разделы с нумерацией, пункты, при необходимости списки и таблицы. Верни СТРОГО валидный JSON-объект {"blocks":[...]}.`;
 }
+
+/**
+ * Промпт авторазметки: ИИ находит в шаблоне места для подстановки данных и
+ * привязывает их к реквизитам сторон, датам, суммам и т.п. Возвращает список
+ * полей со ссылкой на фрагмент (unit_id) и точной подстрокой (text).
+ */
+export function buildAutoMarkupPrompt(params: {
+  units: { unit_id: string; text: string }[];
+  orgRequisites: { field_key: string; field_label: string }[];
+  clientRequisites: { field_key: string; field_label: string }[];
+}): string {
+  const orgList = params.orgRequisites.length
+    ? params.orgRequisites.map((r) => `${r.field_key} — ${r.field_label}`).join('\n')
+    : '(список пуст)';
+  const clientList = params.clientRequisites.length
+    ? params.clientRequisites.map((r) => `${r.field_key} — ${r.field_label}`).join('\n')
+    : '(список пуст)';
+
+  return `Ты размечаешь шаблон договора: находишь конкретные места, которые при создании нового договора нужно заменять данными. Это реквизиты сторон (название/ФИО, ИНН, УНП, ОГРН, адрес, расчётный счёт, банк, БИК), номер и дата договора, город, суммы денег, сроки.
+
+Тебе дан документ как список фрагментов текста (unit_id и text). Верни СТРОГО валидный JSON-объект без пояснений и без markdown-обёртки, вида:
+{"fields":[
+  {"unit_id":"...", "text":"точная подстрока из фрагмента", "name":"Короткое название поля", "source_type":"org_requisite|client_requisite|manual", "field_key":"inn или null", "input_type":"text|number|date|amount или null"}
+]}
+
+Правила:
+- text — ТОЧНАЯ подстрока из соответствующего фрагмента, копируй символ в символ (именно то значение, которое будет меняться, без окружающих слов вроде «ИНН:»).
+- source_type = "org_requisite", если это реквизит вашей стороны (Исполнитель/Продавец), "client_requisite" — реквизит другой стороны (Заказчик/Покупатель/Клиент), иначе "manual".
+- field_key: для org_requisite и client_requisite подбери подходящий ключ из списков ниже; если подходящего нет — верни null и поставь source_type "manual".
+- input_type: только для manual — "date" для дат, "amount" для денежных сумм, "number" для прочих чисел, "text" для остального. Для реквизитов — null.
+- Не размечай названия разделов, служебные слова и общий текст пунктов — только конкретные подставляемые значения.
+- Если сомневаешься, к какой стороне относится реквизит, используй "manual".
+
+Реквизиты вашей организации (field_key — подпись):
+${orgList}
+
+Реквизиты клиента (field_key — подпись):
+${clientList}
+
+Документ (фрагменты):
+${JSON.stringify(params.units)}`;
+}
