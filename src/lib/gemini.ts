@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Block } from './template-types';
+import { coerceText, type Block } from './template-types';
 
 // Flash — для правок и разбора, Pro — для генерации с нуля (см. CLAUDE.md, шаг 5).
 // Используем стабильные алиасы -latest: конкретные версии (например
@@ -83,9 +83,8 @@ function makeId() {
   return `ai${Date.now().toString(36)}${idCounter}`;
 }
 
-function toText(value: unknown): string {
-  return typeof value === 'string' ? value : String(value ?? '');
-}
+// coerceText надёжно достаёт текст даже когда ИИ вернул пункт/ячейку объектом.
+const toText = coerceText;
 
 /**
  * Приводит ответ модели к валидному массиву блоков нашей структуры

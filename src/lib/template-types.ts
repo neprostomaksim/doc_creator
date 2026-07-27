@@ -20,6 +20,27 @@ function isTextUnit(value: unknown): value is TableCell {
 }
 
 /**
+ * Надёжно достаёт текст из значения. ИИ иногда возвращает пункт списка или
+ * ячейку не строкой, а объектом ({"text":"..."} / {"item":"..."} и т.п.);
+ * наивный String(obj) давал «[object Object]». Здесь копаем внутрь объекта.
+ */
+export function coerceText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (value == null) return '';
+  if (typeof value === 'object') {
+    const o = value as Record<string, unknown>;
+    for (const key of ['text', 'item', 'value', 'name', 'content', 'title']) {
+      if (typeof o[key] === 'string') return o[key] as string;
+    }
+    for (const v of Object.values(o)) {
+      if (typeof v === 'string') return v;
+    }
+    return '';
+  }
+  return String(value);
+}
+
+/**
  * Приводит blocks, прочитанные из базы, к текущему формату: в старых
  * шаблонах (до появления разметки по ячейкам таблиц и пунктам списков)
  * items/rows хранились как обычные строки, а не { id, text }.
@@ -33,7 +54,9 @@ export function normalizeBlocks(raw: unknown): Block[] {
       const items = Array.isArray(b.items) ? b.items : [];
       return {
         ...b,
-        items: items.map((item) => (isTextUnit(item) ? item : { id: legacyId(), text: String(item) })),
+        items: items.map((item) =>
+          isTextUnit(item) ? { ...item, text: coerceText(item.text) } : { id: legacyId(), text: coerceText(item) },
+        ),
       } as Block;
     }
     if (b.type === 'table') {
@@ -42,7 +65,7 @@ export function normalizeBlocks(raw: unknown): Block[] {
         ...b,
         rows: rows.map((row: unknown) =>
           (Array.isArray(row) ? row : []).map((cell) =>
-            isTextUnit(cell) ? cell : { id: legacyId(), text: String(cell) },
+            isTextUnit(cell) ? { ...cell, text: coerceText(cell.text) } : { id: legacyId(), text: coerceText(cell) },
           ),
         ),
       } as Block;
