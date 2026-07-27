@@ -79,6 +79,56 @@ export function RequisitesEditor({
     if (!error && data) setItems((prev) => [...prev, ...(data as Requisite[])]);
   }
 
+  const [extracting, setExtracting] = useState(false);
+  const [extractMsg, setExtractMsg] = useState<string | null>(null);
+
+  async function extractFromFile(file: File) {
+    setExtracting(true);
+    setExtractMsg(null);
+
+    const formData = new FormData();
+    formData.set('file', file);
+    const response = await fetch('/api/requisites/extract', { method: 'POST', body: formData });
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      setExtracting(false);
+      setExtractMsg(body?.error ?? 'Не удалось извлечь реквизиты');
+      return;
+    }
+
+    const { requisites } = (await response.json()) as {
+      requisites: { label: string; value: string }[];
+    };
+
+    const existingKeys = items.map((i) => i.field_key);
+    const base = nextSortOrder();
+    const rows = requisites.map((r, index) => {
+      const key = slugifyFieldKey(r.label, existingKeys);
+      existingKeys.push(key);
+      return {
+        owner_type: ownerType,
+        owner_id: ownerId,
+        field_key: key,
+        field_label: r.label,
+        field_value: r.value,
+        sort_order: base + index,
+      };
+    });
+
+    if (rows.length > 0) {
+      const { data, error } = await supabase.from('requisites').insert(rows).select();
+      if (!error && data) setItems((prev) => [...prev, ...(data as Requisite[])]);
+    }
+
+    setExtracting(false);
+    setExtractMsg(
+      rows.length > 0
+        ? `Добавлено полей: ${rows.length}. Проверьте значения ниже.`
+        : 'ИИ не нашёл реквизитов в документе.',
+    );
+  }
+
   function updateLocal(id: string, patch: Partial<Requisite>) {
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   }
@@ -124,6 +174,34 @@ export function RequisitesEditor({
             {preset.buttonLabel}
           </button>
         ))}
+      </div>
+
+      <div className="mb-3">
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm text-fg hover:bg-surface2">
+          {extracting ? 'ИИ извлекает…' : '📄 Извлечь из документа (ИИ)'}
+          <input
+            type="file"
+            accept=".docx,.pdf,.txt"
+            disabled={extracting}
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) extractFromFile(f);
+              e.target.value = '';
+            }}
+          />
+        </label>
+        <p className="mt-1 text-xs text-muted">
+          Загрузите договор или карточку предприятия (.docx/.pdf/.txt) — ИИ вытащит реквизиты.
+        </p>
+        {extractMsg && (
+          <p
+            className="mt-2 rounded-lg px-3 py-2 text-sm"
+            style={{ background: 'var(--accent-soft)', color: 'var(--accent-soft-fg)' }}
+          >
+            {extractMsg}
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">
