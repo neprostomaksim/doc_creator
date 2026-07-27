@@ -62,20 +62,72 @@ function extractParagraphText(innerXml: string): string {
   return texts.join('');
 }
 
-function extractFirstRunProps(innerXml: string): string {
-  const runMatch = innerXml.match(/<w:r(?:\s[^>]*)?>([\s\S]*?)<\/w:r>/);
-  if (!runMatch) return '';
-  const rPrMatch = runMatch[1].match(/<w:rPr>[\s\S]*?<\/w:rPr>|<w:rPr\s*\/>/);
-  return rPrMatch ? rPrMatch[0] : '';
-}
-
-function extractParagraphProps(innerXml: string): string {
-  const pPrMatch = innerXml.match(/^<w:pPr>[\s\S]*?<\/w:pPr>|^<w:pPr\s*\/>/);
-  return pPrMatch ? pPrMatch[0] : '';
-}
-
 function isImageSource(field: TemplateField): boolean {
   return field.source.type === 'signature' || field.source.type === 'stamp';
+}
+
+// Абзац разбивается на части: сырой XML (runs, rPr, tab, br…) и текстовые
+// узлы <w:t>. Значения полей подставляются ТОЛЬКО в текст узлов, поэтому
+// всё форматирование, нумерация и структура прогонов сохраняются.
+type Part = { type: 'xml'; s: string } | { type: 't'; text: string };
+
+function parseInnerToParts(innerXml: string): Part[] {
+  const parts: Part[] = [];
+  const re = /<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:t(?:\s[^>]*)?\/>/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(innerXml)) !== null) {
+    if (m.index > last) parts.push({ type: 'xml', s: innerXml.slice(last, m.index) });
+    parts.push({ type: 't', text: m[1] != null ? xmlUnescape(m[1]) : '' });
+    last = m.index + m[0].length;
+  }
+  if (last < innerXml.length) parts.push({ type: 'xml', s: innerXml.slice(last) });
+  return parts;
+}
+
+/** Заменяет первое вхождение find на replace в тексте узлов <w:t>, даже если
+ *  оно разбито на несколько прогонов. Возвращает true, если нашлось. */
+function replaceAcrossParts(parts: Part[], find: string, replace: string): boolean {
+  const tParts = parts.filter((p): p is { type: 't'; text: string } => p.type === 't');
+  const full = tParts.map((p) => p.text).join('');
+  const at = full.indexOf(find);
+  if (at < 0 || find.length === 0) return false;
+
+  const end = at + find.length;
+  let acc = 0;
+  let si = -1;
+  let so = 0;
+  let ei = -1;
+  let eo = 0;
+  for (let i = 0; i < tParts.length; i += 1) {
+    const len = tParts[i].text.length;
+    if (si < 0 && at < acc + len) {
+      si = i;
+      so = at - acc;
+    }
+    if (si >= 0 && end <= acc + len) {
+      ei = i;
+      eo = end - acc;
+      break;
+    }
+    acc += len;
+  }
+  if (si < 0 || ei < 0) return false;
+
+  if (si === ei) {
+    tParts[si].text = tParts[si].text.slice(0, so) + replace + tParts[si].text.slice(eo);
+  } else {
+    tParts[si].text = tParts[si].text.slice(0, so) + replace;
+    for (let i = si + 1; i < ei; i += 1) tParts[i].text = '';
+    tParts[ei].text = tParts[ei].text.slice(eo);
+  }
+  return true;
+}
+
+function rebuildInner(parts: Part[]): string {
+  return parts
+    .map((p) => (p.type === 'xml' ? p.s : `<w:t xml:space="preserve">${xmlEscape(p.text)}</w:t>`))
+    .join('');
 }
 
 /**
@@ -143,14 +195,18 @@ export async function renderContractDocx({
     usedParagraphIndexes.add(paragraphIndex);
     const paragraph = paragraphs[paragraphIndex];
 
-    let newText = extractParagraphText(paragraph.innerXml);
+    // Заменяем текст полей прямо в прогонах абзаца, сохраняя форматирование.
+    const parts = parseInnerToParts(paragraph.innerXml);
 
     for (const field of blockFields) {
       if (isImageSource(field)) {
         const resolution = resolve(field);
         if (resolution.kind === 'image') {
           imageData[field.source.type] = resolution.image;
-          newText = `${newText} {{IMAGE ${field.source.type}}}`.trim();
+          parts.push({
+            type: 'xml',
+            s: `<w:r><w:t xml:space="preserve"> {{IMAGE ${field.source.type}}}</w:t></w:r>`,
+          });
         }
         continue;
       }
@@ -158,19 +214,13 @@ export async function renderContractDocx({
       const resolution = resolve(field);
       const value = resolution.kind === 'text' ? resolution.value : '';
       if (!value) unfilledFieldNames.push(field.name);
-      newText = newText.includes(field.original_text)
-        ? newText.replace(field.original_text, value)
-        : newText;
+      replaceAcrossParts(parts, field.original_text, value);
     }
-
-    const pPr = extractParagraphProps(paragraph.innerXml);
-    const rPr = extractFirstRunProps(paragraph.innerXml);
-    const newInner = `${pPr}<w:r>${rPr}<w:t xml:space="preserve">${xmlEscape(newText)}</w:t></w:r>`;
 
     edits.push({
       start: paragraph.start,
       end: paragraph.end,
-      replacement: `${paragraph.openTag}${newInner}${paragraph.closeTag}`,
+      replacement: `${paragraph.openTag}${rebuildInner(parts)}${paragraph.closeTag}`,
     });
   }
 
