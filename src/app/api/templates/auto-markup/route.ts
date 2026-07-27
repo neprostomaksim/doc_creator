@@ -26,7 +26,10 @@ export async function POST(request: Request) {
   if (!template) return NextResponse.json({ error: 'Шаблон не найден' }, { status: 404 });
 
   const blocks = normalizeBlocks(template.blocks);
-  const units = getMarkableUnits(blocks).filter((u) => u.text.trim());
+  // Пропускаем пустые и уже размеченные (с плейсхолдерами) фрагменты.
+  const units = getMarkableUnits(blocks).filter(
+    (u) => u.text.trim() && !/\{\{[^}]+\}\}/.test(u.text),
+  );
   if (units.length === 0) {
     return NextResponse.json({ error: 'В шаблоне нет текста для разметки' }, { status: 400 });
   }
