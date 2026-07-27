@@ -10,14 +10,12 @@ type Template = { id: string; name: string; category: string | null; fields: Tem
 type OrgRequisite = { field_key: string; field_label: string; field_value: string };
 type Stamp = { id: string; name: string; type: 'signature' | 'stamp' };
 type Material = { id: string; name: string };
-type ExampleCase = { id: string; title: string };
 
-type Mode = 'strict' | 'assisted' | 'generative';
+type Mode = 'strict' | 'assisted';
 
 const MODE_INFO: { id: Mode; label: string; hint: string }[] = [
   { id: 'strict', label: 'Строго по шаблону', hint: 'Быстро, без ИИ — подстановка данных в шаблон' },
   { id: 'assisted', label: 'Шаблон + правки ИИ', hint: 'Взять шаблон и попросить ИИ его изменить' },
-  { id: 'generative', label: 'С нуля по материалам', hint: 'ИИ соберёт договор по вашему описанию' },
 ];
 
 const MANUAL_INPUT_LABELS: Record<'text' | 'number' | 'date' | 'amount', string> = {
@@ -28,7 +26,6 @@ const MANUAL_INPUT_LABELS: Record<'text' | 'number' | 'date' | 'amount', string>
 };
 
 function stepLabels(mode: Mode): string[] {
-  if (mode === 'generative') return ['Клиент', 'Режим', 'Материалы', 'Описание'];
   if (mode === 'assisted') return ['Клиент', 'Режим', 'Шаблон', 'Правки'];
   return ['Клиент', 'Режим', 'Шаблон', 'Поля'];
 }
@@ -48,7 +45,6 @@ export function ContractWizard({
   orgRequisites,
   stamps,
   materials = [],
-  exampleCases = [],
   preset,
   initialClientId,
 }: {
@@ -57,7 +53,6 @@ export function ContractWizard({
   orgRequisites: OrgRequisite[];
   stamps: Stamp[];
   materials?: Material[];
-  exampleCases?: ExampleCase[];
   preset?: WizardPreset;
   initialClientId?: string;
 }) {
@@ -82,11 +77,9 @@ export function ContractWizard({
   const [clientValues, setClientValues] = useState<Record<string, string>>({});
   const [manualValues, setManualValues] = useState<Record<string, string>>(preset?.values ?? {});
 
-  // ИИ-режимы
+  // Режим «Шаблон + правки ИИ»
   const [instruction, setInstruction] = useState('');
-  const [description, setDescription] = useState('');
   const [selectedMaterialIds, setSelectedMaterialIds] = useState<string[]>([]);
-  const [selectedExampleIds, setSelectedExampleIds] = useState<string[]>([]);
 
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [selectedSignatureId, setSelectedSignatureId] = useState<string | ''>('');
@@ -221,8 +214,6 @@ export function ContractWizard({
         caseId: preset?.caseId ?? null,
         templateId: selectedTemplateId,
         instruction,
-        description,
-        exampleCaseIds: selectedExampleIds,
         materialIds: selectedMaterialIds,
       }),
     });
@@ -242,14 +233,8 @@ export function ContractWizard({
     else handleGenerateAi();
   }
 
-  const canProceedFromStep3 =
-    mode === 'generative' ? true : !!selectedTemplateId;
-  const canGenerate =
-    mode === 'assisted'
-      ? instruction.trim().length > 0
-      : mode === 'generative'
-        ? description.trim().length > 0
-        : true;
+  const canProceedFromStep3 = !!selectedTemplateId;
+  const canGenerate = mode === 'assisted' ? instruction.trim().length > 0 : true;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -381,7 +366,7 @@ export function ContractWizard({
             </div>
           )}
 
-          {step === 3 && mode !== 'generative' && (
+          {step === 3 && (
             <div>
               <h2 className="mb-3 text-lg font-semibold text-fg">Выберите шаблон</h2>
               {templates.length === 0 ? (
@@ -410,65 +395,38 @@ export function ContractWizard({
                   ))}
                 </div>
               )}
-            </div>
-          )}
 
-          {step === 3 && mode === 'generative' && (
-            <div>
-              <h2 className="mb-3 text-lg font-semibold text-fg">Материалы и примеры</h2>
-
-              <p className="mb-2 text-sm font-medium text-fg">
-                Материалы для учёта (необязательно)
-              </p>
-              {materials.length === 0 ? (
-                <p className="mb-4 text-sm text-muted">
-                  Нет материалов — добавьте их в разделе «Материалы».
-                </p>
-              ) : (
-                <div className="mb-4 space-y-2">
-                  {materials.map((m) => (
-                    <label
-                      key={m.id}
-                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-border p-3 text-sm"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedMaterialIds.includes(m.id)}
-                        onChange={() => setSelectedMaterialIds((prev) => toggleInArray(prev, m.id))}
-                      />
-                      {m.name}
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              <p className="mb-2 text-sm font-medium text-fg">
-                Примеры-образцы стиля — до 2 (необязательно)
-              </p>
-              {exampleCases.length === 0 ? (
-                <p className="text-sm text-muted">Пока нет готовых договоров для примера.</p>
-              ) : (
-                <div className="space-y-2">
-                  {exampleCases.map((c) => {
-                    const checked = selectedExampleIds.includes(c.id);
-                    const disabled = !checked && selectedExampleIds.length >= 2;
-                    return (
-                      <label
-                        key={c.id}
-                        className={`flex cursor-pointer items-center gap-2 rounded-lg border border-border p-3 text-sm ${
-                          disabled ? 'opacity-40' : ''
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          disabled={disabled}
-                          onChange={() => setSelectedExampleIds((prev) => toggleInArray(prev, c.id))}
-                        />
-                        {c.title}
-                      </label>
-                    );
-                  })}
+              {mode === 'assisted' && (
+                <div className="mt-5">
+                  <p className="mb-2 text-sm font-medium text-fg">
+                    Материалы для учёта (необязательно)
+                  </p>
+                  {materials.length === 0 ? (
+                    <p className="text-sm text-muted">
+                      Нет материалов — добавьте их в разделе «Материалы».
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {materials.map((m) => (
+                        <label
+                          key={m.id}
+                          className="flex cursor-pointer items-center gap-2 rounded-lg border border-border p-3 text-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedMaterialIds.includes(m.id)}
+                            onChange={() =>
+                              setSelectedMaterialIds((prev) => toggleInArray(prev, m.id))
+                            }
+                          />
+                          {m.name}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  <p className="mt-2 text-xs text-muted">
+                    ИИ учтёт содержимое выбранных материалов при правке договора.
+                  </p>
                 </div>
               )}
             </div>
@@ -600,26 +558,10 @@ export function ContractWizard({
                   </p>
                 </>
               )}
-
-              {mode === 'generative' && (
-                <>
-                  <h2 className="mb-3 text-lg font-semibold text-fg">Опишите договор</h2>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={5}
-                    placeholder="Например: договор оказания услуг по онлайн-обучению на 3 месяца, с рассрочкой оплаты и правом расторжения"
-                    className="input-field"
-                  />
-                  <p className="mt-1 text-xs text-muted">
-                    ИИ соберёт договор по описанию, материалам и примерам.
-                  </p>
-                </>
-              )}
             </div>
           )}
 
-          {generating && (mode === 'assisted' || mode === 'generative') && (
+          {generating && mode === 'assisted' && (
             <p className="mt-4 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-700">
               ИИ работает над договором, это может занять до минуты…
             </p>

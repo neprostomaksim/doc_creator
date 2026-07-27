@@ -71,7 +71,18 @@ export async function POST(request: Request) {
         .single();
       if (!template) return NextResponse.json({ error: 'Шаблон не найден' }, { status: 404 });
 
-      const prompt = buildEditPrompt(normalizeBlocks(template.blocks), instruction);
+      const materials: { name: string; content: string }[] = [];
+      if ((body.materialIds ?? []).length > 0) {
+        const { data: rows } = await supabase
+          .from('materials')
+          .select('name, content_text')
+          .in('id', body.materialIds as string[]);
+        for (const row of rows ?? []) {
+          if (row.content_text) materials.push({ name: row.name, content: row.content_text });
+        }
+      }
+
+      const prompt = buildEditPrompt(normalizeBlocks(template.blocks), instruction, materials);
       blocks = await generateBlocks(GEMINI_FLASH, prompt, apiKey);
     } else {
       const description = (body.description ?? '').trim();
