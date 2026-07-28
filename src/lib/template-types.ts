@@ -147,3 +147,25 @@ export type TemplateField = {
   block_id: string;
   original_text: string;
 };
+
+/**
+ * Возвращает шаблонные blocks с плейсхолдерами, заменёнными обратно на
+ * исходный текст. Нужно режиму «Шаблон + правки ИИ»: он должен видеть
+ * настоящий договор с данными, а не разметку {{...}}, иначе плейсхолдеры
+ * так и останутся в готовом документе незаполненными.
+ */
+export function unmarkTemplate(blocks: Block[], fields: TemplateField[]): Block[] {
+  let result = blocks;
+  for (const field of fields) {
+    if (!field.original_text) continue;
+    const unit = getMarkableUnits(result).find((u) => u.id === field.block_id);
+    if (unit && unit.text.includes(field.placeholder)) {
+      result = updateMarkableUnitText(
+        result,
+        field.block_id,
+        unit.text.replace(field.placeholder, field.original_text),
+      );
+    }
+  }
+  return result;
+}

@@ -4,7 +4,13 @@ import { generateBlocks, resolveGeminiKey, GEMINI_FLASH, GEMINI_PRO } from '@/li
 import { buildEditPrompt, buildGeneratePrompt } from '@/lib/ai-prompts';
 import { buildDocxFromBlocks } from '@/lib/build-docx';
 import { saveContractVersion } from '@/lib/save-contract';
-import { getMarkableUnits, normalizeBlocks, type Block } from '@/lib/template-types';
+import {
+  getMarkableUnits,
+  normalizeBlocks,
+  unmarkTemplate,
+  type Block,
+  type TemplateField,
+} from '@/lib/template-types';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -66,7 +72,7 @@ export async function POST(request: Request) {
 
       const { data: template } = await supabase
         .from('templates')
-        .select('blocks')
+        .select('blocks, fields')
         .eq('id', body.templateId)
         .single();
       if (!template) return NextResponse.json({ error: 'Шаблон не найден' }, { status: 404 });
@@ -82,7 +88,13 @@ export async function POST(request: Request) {
         }
       }
 
-      const prompt = buildEditPrompt(normalizeBlocks(template.blocks), instruction, materials);
+      // Если шаблон размечен ({{плейсхолдеры}}), подставляем обратно реальный
+      // текст: правки ИИ идут по настоящему договору, а не по разметке.
+      const realBlocks = unmarkTemplate(
+        normalizeBlocks(template.blocks),
+        (template.fields ?? []) as TemplateField[],
+      );
+      const prompt = buildEditPrompt(realBlocks, instruction, materials);
       blocks = await generateBlocks(GEMINI_FLASH, prompt, apiKey);
     } else {
       const description = (body.description ?? '').trim();
