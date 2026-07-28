@@ -96,6 +96,7 @@ export function ContractWizard({
     filename: string;
     warnings: string[];
     caseId: string;
+    versionId?: string;
   } | null>(null);
 
   const orgValueByKey = useMemo(
@@ -283,10 +284,15 @@ export function ContractWizard({
             >
               Скачать {result.filename}
             </button>
-            <Link
-              href={`/dashboard/contracts/${result.caseId}`}
-              className="btn btn-secondary"
-            >
+            {result.versionId && (
+              <Link
+                href={`/dashboard/contracts/${result.caseId}/refine/${result.versionId}`}
+                className="btn btn-secondary"
+              >
+                Доработать с ИИ
+              </Link>
+            )}
+            <Link href={`/dashboard/contracts/${result.caseId}`} className="btn btn-secondary">
               Открыть дело
             </Link>
           </div>

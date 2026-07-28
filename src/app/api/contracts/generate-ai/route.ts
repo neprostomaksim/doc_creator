@@ -160,6 +160,7 @@ export async function POST(request: Request) {
     url: result.url,
     filename: result.filename,
     caseId: result.caseId,
+    versionId: result.versionId,
     versionNumber: result.versionNumber,
     warnings,
   });

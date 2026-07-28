@@ -102,10 +102,10 @@ export function CaseDetail({
             <div className="flex items-center gap-2">
               {v.mode !== 'strict' && (
                 <Link
-                  href={`/dashboard/contracts/${caseId}/versions/${v.id}`}
+                  href={`/dashboard/contracts/${caseId}/refine/${v.id}`}
                   className="btn btn-secondary"
                 >
-                  Редактировать
+                  Доработать с ИИ
                 </Link>
               )}
               {v.url && (

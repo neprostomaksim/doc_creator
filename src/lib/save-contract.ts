@@ -23,7 +23,14 @@ export async function saveContractVersion(
     caseTitle?: string | null;
   },
 ): Promise<
-  | { ok: true; url: string | null; filename: string; caseId: string; versionNumber: number }
+  | {
+      ok: true;
+      url: string | null;
+      filename: string;
+      caseId: string;
+      versionNumber: number;
+      versionId: string;
+    }
   | { ok: false; error: string }
 > {
   const storagePath = `${userId}/${crypto.randomUUID()}.docx`;
@@ -58,17 +65,21 @@ export async function saveContractVersion(
     resolvedCaseId = newCase.id;
   }
 
-  const { error: versionError } = await supabase.from('contract_versions').insert({
-    case_id: resolvedCaseId,
-    version_number: versionNumber,
-    mode: params.mode,
-    template_id: params.templateId,
-    blocks: params.blocks,
-    data: params.data,
-    docx_path: storagePath,
-  });
+  const { data: newVersion, error: versionError } = await supabase
+    .from('contract_versions')
+    .insert({
+      case_id: resolvedCaseId,
+      version_number: versionNumber,
+      mode: params.mode,
+      template_id: params.templateId,
+      blocks: params.blocks,
+      data: params.data,
+      docx_path: storagePath,
+    })
+    .select('id')
+    .single();
 
-  if (versionError) return { ok: false, error: 'Не удалось сохранить версию договора' };
+  if (versionError || !newVersion) return { ok: false, error: 'Не удалось сохранить версию договора' };
 
   const dateStr = new Date().toISOString().slice(0, 10);
   const filename = `Договор_${sanitizeFilenamePart(params.clientName)}_${dateStr}.docx`;
@@ -82,5 +93,6 @@ export async function saveContractVersion(
     filename,
     caseId: resolvedCaseId as string,
     versionNumber,
+    versionId: newVersion.id as string,
   };
 }
