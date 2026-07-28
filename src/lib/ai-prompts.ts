@@ -134,3 +134,45 @@ export function buildExtractRequisitesPrompt(text: string): string {
 Текст документа:
 ${text.slice(0, 12000)}`;
 }
+
+/**
+ * Промпт правок через ОПЕРАЦИИ над исходным документом (для сохранения
+ * форматирования). ИИ возвращает точечные replace/insert_after/delete, а не
+ * пересобирает документ. documentText — абзацы исходного .docx (по строкам).
+ */
+export function buildPatchPrompt(params: {
+  documentText: string;
+  instruction: string;
+  materials?: { name: string; content: string }[];
+  clientRequisites?: { field_label: string; field_value: string }[];
+  orgRequisites?: { field_label: string; field_value: string }[];
+}): string {
+  const mat = params.materials?.length
+    ? `\nМатериалы (используй их содержимое, если это требуется правкой):\n${params.materials
+        .map((m) => `--- ${m.name} ---\n${m.content}`)
+        .join('\n\n')}\n`
+    : '';
+
+  const reqBlock = (title: string, list?: { field_label: string; field_value: string }[]) =>
+    list && list.length
+      ? `\n${title}:\n${list.map((r) => `- ${r.field_label}: ${r.field_value}`).join('\n')}\n`
+      : '';
+
+  return `Ты редактируешь готовый договор точечными правками, не трогая остальной текст и оформление. Верни СТРОГО валидный JSON без пояснений и markdown-обёртки, вида:
+{"edits":[
+  {"op":"replace","find":"точный фрагмент из документа","replace":"на что заменить"},
+  {"op":"insert_after","anchor":"точный фрагмент абзаца, после которого вставить","text":"текст нового абзаца"},
+  {"op":"delete","find":"точный фрагмент абзаца, который удалить"}
+]}
+
+Правила:
+- find/anchor — ТОЧНЫЕ подстроки из текста документа ниже, символ в символ (можно короткие, но однозначные).
+- Для replace бери минимальный фрагмент, который меняется (например, только дату или только название стороны, без окружающих слов).
+- Если нужно подставить реквизиты стороны — сделай отдельный replace для каждого значения (название, УНП/ИНН, ФИО директора, адрес, счёт и т.д.), заменяя старые данные на новые из списков реквизитов ниже.
+- Не дублируй правки, не меняй то, о чём не просили. Нумерацию пунктов не трогай — она проставится сама.
+${reqBlock('Реквизиты вашей стороны (Исполнитель)', params.orgRequisites)}${reqBlock('Реквизиты клиента (Заказчик), которые нужно подставить', params.clientRequisites)}${mat}
+Что нужно сделать: ${params.instruction}
+
+Текст документа (по абзацам):
+${params.documentText}`;
+}

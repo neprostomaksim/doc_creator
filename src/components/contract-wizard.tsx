@@ -14,8 +14,12 @@ type Material = { id: string; name: string };
 type Mode = 'strict' | 'assisted';
 
 const MODE_INFO: { id: Mode; label: string; hint: string }[] = [
-  { id: 'strict', label: 'Строго по шаблону', hint: 'Быстро, без ИИ — подстановка данных в шаблон' },
-  { id: 'assisted', label: 'Шаблон + правки ИИ', hint: 'Взять шаблон и попросить ИИ его изменить' },
+  { id: 'strict', label: 'Строго по шаблону', hint: 'Быстро, без ИИ — подстановка размеченных полей' },
+  {
+    id: 'assisted',
+    label: 'Шаблон + правки ИИ',
+    hint: 'Описать словами, что изменить; ИИ правит документ, сохраняя оформление',
+  },
 ];
 
 const MANUAL_INPUT_LABELS: Record<'text' | 'number' | 'date' | 'amount', string> = {
@@ -553,10 +557,9 @@ export function ContractWizard({
                     placeholder="Например: убери пункт про предоплату, добавь раздел о конфиденциальности, срок сделай 3 месяца"
                     className="input-field"
                   />
-                  <p className="mt-2 rounded-lg px-3 py-2 text-xs" style={{ background: 'var(--warn-soft)', color: 'var(--warn-fg)' }}>
-                    ⚠ В этом режиме документ пересобирается заново, поэтому оформление исходного .docx
-                    (шрифты, отступы, нумерация) не сохраняется — будет стандартное. Чтобы сохранить
-                    оформление шаблона и подставить данные, используйте режим «Строго по шаблону».
+                  <p className="mt-2 text-xs text-muted">
+                    ИИ внесёт правки прямо в ваш .docx, сохранив оформление, и подставит реквизиты
+                    выбранного клиента. Опишите словами, что поменять.
                   </p>
                 </>
               )}
