@@ -119,7 +119,10 @@ export async function POST(request: Request) {
     edits = Array.isArray(list) ? (list as PatchEdit[]) : [];
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Не удалось обработать запрос';
-    return NextResponse.json({ error: `ИИ не справился: ${message}` }, { status: 502 });
+    return NextResponse.json(
+      { error: message.startsWith('ИИ') ? message : `ИИ не справился: ${message}` },
+      { status: 502 },
+    );
   }
 
   let patched: { buffer: Buffer; applied: number; skipped: string[] };

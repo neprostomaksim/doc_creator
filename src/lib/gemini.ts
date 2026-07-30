@@ -23,25 +23,59 @@ function makeClient(apiKey: string): GoogleGenAI {
   return new GoogleGenAI({ apiKey });
 }
 
-/** Запрашивает у модели строго JSON и возвращает распарсенный объект. */
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Временная перегрузка модели — есть смысл повторить запрос. */
+function isTransient(err: unknown): boolean {
+  const s = (err instanceof Error ? err.message : String(err)).toLowerCase();
+  return (
+    s.includes('503') ||
+    s.includes('429') ||
+    s.includes('unavailable') ||
+    s.includes('overloaded') ||
+    s.includes('high demand') ||
+    s.includes('rate limit')
+  );
+}
+
+/**
+ * Запрашивает у модели строго JSON. При временной перегрузке (503/429/
+ * UNAVAILABLE) повторяет запрос с нарастающей паузой, а затем бросает
+ * понятную ошибку по-русски вместо технического JSON от Google.
+ */
 export async function generateJson(model: string, prompt: string, apiKey: string): Promise<unknown> {
   const ai = makeClient(apiKey);
-  const response = await ai.models.generateContent({
-    model,
-    contents: prompt,
-    config: { responseMimeType: 'application/json', temperature: 0.4 },
-  });
+  const delays = [1500, 4000, 8000];
 
-  const text = response.text;
-  if (!text) throw new Error('Пустой ответ модели');
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: { responseMimeType: 'application/json', temperature: 0.4 },
+      });
 
-  // На всякий случай убираем markdown-обёртку, если она вдруг появилась.
-  const cleaned = text
-    .trim()
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/i, '');
+      const text = response.text;
+      if (!text) throw new Error('Пустой ответ модели');
 
-  return JSON.parse(cleaned);
+      // На всякий случай убираем markdown-обёртку, если она вдруг появилась.
+      const cleaned = text
+        .trim()
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/i, '');
+
+      return JSON.parse(cleaned);
+    } catch (err) {
+      if (isTransient(err) && attempt < delays.length) {
+        await sleep(delays[attempt]);
+        continue;
+      }
+      if (isTransient(err)) {
+        throw new Error('ИИ сейчас перегружен. Подождите несколько секунд и попробуйте ещё раз.');
+      }
+      throw err;
+    }
+  }
 }
 
 /**
