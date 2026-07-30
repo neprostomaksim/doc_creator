@@ -32,7 +32,15 @@ export function RefineChat({
       .insert({ version_id: versionId, role, content })
       .select('id, role, content')
       .single();
-    if (data) setMessages((prev) => [...prev, data as ChatMessage]);
+    return data as ChatMessage | null;
+  }
+
+  // Показываем сообщение сразу (локально), а сохранение в БД — фоновое и
+  // необязательное: чат работает, даже если история почему-то не пишется.
+  function addMessage(role: 'user' | 'assistant', content: string) {
+    const local: ChatMessage = { id: `local-${Date.now()}-${Math.random()}`, role, content };
+    setMessages((prev) => [...prev, local]);
+    persistMessage(role, content).catch(() => {});
   }
 
   async function send() {
@@ -40,38 +48,45 @@ export function RefineChat({
     if (!instruction || busy) return;
     setInput('');
     setError(null);
-    await persistMessage('user', instruction);
+    addMessage('user', instruction);
     setBusy(true);
 
-    const response = await fetch('/api/contracts/refine', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ versionId, instruction }),
-    });
-    setBusy(false);
+    try {
+      const response = await fetch('/api/contracts/refine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ versionId, instruction }),
+      });
 
-    if (!response.ok) {
-      const body = await response.json().catch(() => null);
-      const msg = body?.error ?? 'Не удалось выполнить правку';
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        const msg = body?.error ?? 'Не удалось выполнить правку';
+        setError(msg);
+        addMessage('assistant', msg);
+        return;
+      }
+
+      const data = (await response.json()) as {
+        url: string | null;
+        filename: string;
+        applied: number;
+        skipped: string[];
+      };
+      setUrl(data.url);
+      setFilename(data.filename);
+
+      const note =
+        `Готово, применено правок: ${data.applied}.` +
+        (data.skipped.length ? ` Не удалось: ${data.skipped.join('; ')}.` : '') +
+        ' Скачайте обновлённый документ кнопкой сверху.';
+      addMessage('assistant', note);
+    } catch {
+      const msg = 'Не удалось связаться с сервером. Попробуйте ещё раз.';
       setError(msg);
-      await persistMessage('assistant', msg);
-      return;
+      addMessage('assistant', msg);
+    } finally {
+      setBusy(false);
     }
-
-    const data = (await response.json()) as {
-      url: string | null;
-      filename: string;
-      applied: number;
-      skipped: string[];
-    };
-    setUrl(data.url);
-    setFilename(data.filename);
-
-    const note =
-      `Готово, применено правок: ${data.applied}.` +
-      (data.skipped.length ? ` Не удалось: ${data.skipped.join('; ')}.` : '') +
-      ' Скачайте обновлённый документ.';
-    await persistMessage('assistant', note);
   }
 
   async function download() {
