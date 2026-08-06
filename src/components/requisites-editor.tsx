@@ -178,10 +178,10 @@ export function RequisitesEditor({
 
       <div className="mb-3">
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm text-fg hover:bg-surface2">
-          {extracting ? 'ИИ извлекает…' : '📄 Извлечь из документа (ИИ)'}
+          {extracting ? 'ИИ извлекает…' : '📄 Извлечь из документа или скрина (ИИ)'}
           <input
             type="file"
-            accept=".docx,.pdf,.txt"
+            accept=".docx,.pdf,.txt,.png,.jpg,.jpeg,.webp,.heic,.heif,image/*"
             disabled={extracting}
             className="hidden"
             onChange={(e) => {
@@ -192,7 +192,8 @@ export function RequisitesEditor({
           />
         </label>
         <p className="mt-1 text-xs text-muted">
-          Загрузите договор или карточку предприятия (.docx/.pdf/.txt) — ИИ вытащит реквизиты.
+          Загрузите договор, карточку предприятия или скриншот/фото реквизитов
+          (.docx/.pdf/.txt/.png/.jpg) — ИИ распознает и вытащит реквизиты.
         </p>
         {extractMsg && (
           <p

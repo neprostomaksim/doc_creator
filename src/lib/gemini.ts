@@ -38,20 +38,32 @@ function isTransient(err: unknown): boolean {
   );
 }
 
+export type InlineImage = { data: string; mimeType: string };
+
 /**
- * Запрашивает у модели строго JSON. При временной перегрузке (503/429/
- * UNAVAILABLE) повторяет запрос с нарастающей паузой, а затем бросает
- * понятную ошибку по-русски вместо технического JSON от Google.
+ * Запрашивает у модели строго JSON по тексту и/или изображению (Gemini —
+ * мультимодальная модель, читает скрины/фото). При временной перегрузке
+ * (503/429/UNAVAILABLE) повторяет запрос с паузой, затем бросает понятную
+ * ошибку по-русски вместо технического JSON от Google.
  */
-export async function generateJson(model: string, prompt: string, apiKey: string): Promise<unknown> {
+export async function generateJson(
+  model: string,
+  prompt: string,
+  apiKey: string,
+  image?: InlineImage,
+): Promise<unknown> {
   const ai = makeClient(apiKey);
   const delays = [1500, 4000, 8000];
+
+  const contents = image
+    ? [{ role: 'user', parts: [{ text: prompt }, { inlineData: image }] }]
+    : prompt;
 
   for (let attempt = 0; ; attempt += 1) {
     try {
       const response = await ai.models.generateContent({
         model,
-        contents: prompt,
+        contents,
         config: { responseMimeType: 'application/json', temperature: 0.4 },
       });
 
