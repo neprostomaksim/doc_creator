@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { translateAuthError } from '@/lib/auth-errors';
+import { PasswordField } from '@/components/password-field';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -105,35 +106,25 @@ export default function RegisterPage() {
             />
           </div>
 
-          <div>
-            <label htmlFor="password" className="label">
-              Пароль
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input-field"
-            />
-          </div>
+          <PasswordField
+            id="password"
+            label="Пароль"
+            value={password}
+            onChange={setPassword}
+            required
+            minLength={6}
+            autoComplete="new-password"
+          />
 
-          <div>
-            <label htmlFor="confirmPassword" className="label">
-              Повтор пароля
-            </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              required
-              minLength={6}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="input-field"
-            />
-          </div>
+          <PasswordField
+            id="confirmPassword"
+            label="Повтор пароля"
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            required
+            minLength={6}
+            autoComplete="new-password"
+          />
 
           <div>
             <label htmlFor="inviteCode" className="label">
